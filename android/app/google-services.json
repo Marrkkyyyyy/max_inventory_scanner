@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "2957698276",
+    "project_id": "max-inventory-scanner-b0b53",
+    "storage_bucket": "max-inventory-scanner-b0b53.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:2957698276:android:6d002a18305ed049ca38f1",
+        "android_client_info": {
+          "package_name": "com.chas.max_inventory_scanner"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCkQUqxYaX4p_eZfXG054ZQCMNgYJxcML4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
