@@ -56,3 +56,23 @@ String cleanBarcode(String rawScan) {
 
   return cleaned;
 }
+
+  Future<String> getLogisticResult(String barcode) async {
+    return await identifyCourier(barcode) ?? 'Unknown';
+  }
+
+  Future<String> getDisplayTrackingNumber(
+      String logistic, String barcode) async {
+    if (logistic == 'USPS') {
+      return cleanBarcode(barcode);
+    }
+    return barcode;
+  }
+
+  Future<String> getInternalTrackingNumber(
+      String logistic, String displayedNumber) async {
+    if (logistic == 'FedEx' && displayedNumber.length >= 12) {
+      return displayedNumber.substring(displayedNumber.length - 12);
+    }
+    return displayedNumber;
+  }

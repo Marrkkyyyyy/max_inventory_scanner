@@ -3,4 +3,5 @@ enum PackageResult {
   noInternet,
   failure,
   isDuplicate,
+  notFound
 }

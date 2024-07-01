@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
-
+import 'package:max_inventory_scanner/view/widget/consolidation/consolidation_widgets.dart';
 import '../../../core/constant/color.dart';
-import '../../widget/consolidation/consolidation_description.dart';
-import '../../widget/consolidation/consolidation_image.dart';
-import '../../widget/consolidation/consolidation_option.dart';
-import '../../widget/consolidation/start_consolidation_button.dart';
 
 class ConsolidationPage extends StatelessWidget {
   const ConsolidationPage({super.key});
@@ -23,17 +19,11 @@ class ConsolidationPage extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const ConsolidationDescription(),
+            consolidationDescription(),
             const SizedBox(height: 8),
-            const ConsolidationImage(),
+            consolidationImage(),
             const SizedBox(height: 8),
-            StartConsolidationButton(onPressed: () {
-              showDialog(
-                  context: context,
-                  builder: (BuildContext context) {
-                    return const ConsolidationOption();
-                  });
-            }),
+            startConsolidationButton(context),
           ],
         ),
       ),

@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
 import 'package:max_inventory_scanner/core/class/firestore_services.dart';
+import 'package:flutter_easyloading/flutter_easyloading.dart';
 
 import '../../../utils/snackbar_service.dart';
 import '../../class/service_result.dart';
@@ -12,6 +13,7 @@ class ConsolidationProcessController extends GetxController {
   RxList<String> detectedBarcodes = <String>[].obs;
   final TextEditingController trackingNumberController =
       TextEditingController();
+  RxBool isConsolidating = false.obs;
 
   @override
   void onInit() {
@@ -54,6 +56,10 @@ class ConsolidationProcessController extends GetxController {
   }
 
   Future<void> consolidatePackages() async {
+    if (isConsolidating.value) {
+      return;
+    }
+
     if (detectedBarcodes.isEmpty) {
       SnackbarService.showCustomSnackbar(
         title: 'No Packages to Consolidate',
@@ -63,37 +69,55 @@ class ConsolidationProcessController extends GetxController {
       return;
     }
 
-    PackageResult result = await _firestoreService.consolidatePackages(
-      newConsolidatedTrackingNumber: barcodeResult!,
-      trackingNumbersToConsolidate: detectedBarcodes,
-    );
+    isConsolidating.value = true;
+    EasyLoading.show(status: 'Consolidating packages...');
 
-    switch (result) {
-      case PackageResult.success:
-        SnackbarService.showCustomSnackbar(
-          title: 'Consolidation Successful',
-          message: 'Packages have been successfully consolidated.',
-          backgroundColor: Colors.green,
-        );
-        Get.back(); 
-        break;
-      case PackageResult.noInternet:
-        SnackbarService.showCustomSnackbar(
-          title: 'No Internet Connection',
-          message: 'Please check your internet connection and try again.',
-          backgroundColor: Colors.red,
-        );
-        break;
+    try {
+      PackageResult result = await _firestoreService.consolidatePackages(
+        newConsolidatedTrackingNumber: barcodeResult!,
+        trackingNumbersToConsolidate: detectedBarcodes,
+      );
 
-      case PackageResult.failure:
-        SnackbarService.showCustomSnackbar(
-          title: 'Consolidation Failed',
-          message: 'An error occurred during consolidation. Please try again.',
-          backgroundColor: Colors.red,
-        );
-        break;
-      default:
-        break;
+      switch (result) {
+        case PackageResult.success:
+          EasyLoading.dismiss();
+          EasyLoading.showSuccess('Consolidation Successful',
+              duration: const Duration(seconds: 2));
+          await Future.delayed(const Duration(seconds: 2));
+          Get.back();
+          break;
+        case PackageResult.noInternet:
+          EasyLoading.dismiss();
+          SnackbarService.showCustomSnackbar(
+            title: 'No Internet Connection',
+            message: 'Please check your internet connection and try again.',
+            backgroundColor: Colors.red,
+          );
+          break;
+        case PackageResult.failure:
+          EasyLoading.dismiss();
+          SnackbarService.showCustomSnackbar(
+            title: 'Consolidation Failed',
+            message:
+                'An error occurred during consolidation. Please try again.',
+            backgroundColor: Colors.red,
+          );
+          break;
+        case PackageResult.notFound:
+          EasyLoading.dismiss();
+          SnackbarService.showCustomSnackbar(
+            title: "Consolidation Failed",
+            message:
+                "Some packages were not found or are not in received status",
+            backgroundColor: Colors.red,
+          );
+          break;
+        default:
+          EasyLoading.dismiss();
+          break;
+      }
+    } finally {
+      isConsolidating.value = false;
     }
   }
 }
