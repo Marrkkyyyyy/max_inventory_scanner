@@ -1,6 +1,4 @@
 import 'dart:io';
-import 'dart:typed_data';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import '../functions/carrier_and_tracking_number.dart';
@@ -76,66 +74,7 @@ class FirestoreService {
           .get();
 
       if (existingPackages.docs.isNotEmpty) {
-        DocumentSnapshot existingPackage = existingPackages.docs.first;
-        Map<String, dynamic> data =
-            existingPackage.data() as Map<String, dynamic>;
-
-        if (data['status'] == status) {
-          return PackageResult.isDuplicate;
-        }
-
-        DocumentReference packageRef = existingPackage.reference;
-
-        Map<String, dynamic> logs = data['logs'] as Map<String, dynamic>;
-        String newLogKey = 'log${logs.length + 1}';
-        logs[newLogKey] = {
-          'timestamp': FieldValue.serverTimestamp(),
-          'status': status,
-        };
-
-        WriteBatch batch = _firestore.batch();
-
-        batch.update(packageRef, {
-          'status': status,
-          'logs': logs,
-        });
-
-        List<Map<String, dynamic>> containsPackages =
-            List<Map<String, dynamic>>.from(data['containsPackages'] ?? []);
-
-        if (containsPackages.isNotEmpty) {
-          for (var packageInfo in containsPackages) {
-            String containedTrackingNumber = packageInfo['trackingNumber'];
-            QuerySnapshot containedPackageSnapshot = await _firestore
-                .collection('Packages')
-                .where('trackingNumber', isEqualTo: containedTrackingNumber)
-                .limit(1)
-                .get();
-
-            if (containedPackageSnapshot.docs.isNotEmpty) {
-              DocumentReference containedPackageRef =
-                  containedPackageSnapshot.docs.first.reference;
-              Map<String, dynamic> containedData =
-                  containedPackageSnapshot.docs.first.data()
-                      as Map<String, dynamic>;
-              Map<String, dynamic> containedLogs =
-                  containedData['logs'] as Map<String, dynamic>;
-              String newContainedLogKey = 'log${containedLogs.length + 1}';
-
-              batch.update(containedPackageRef, {
-                'status': status,
-                'logs.$newContainedLogKey': {
-                  'timestamp': FieldValue.serverTimestamp(),
-                  'status': status,
-                }
-              });
-            }
-          }
-        }
-
-        await batch.commit();
-
-        return PackageResult.success;
+        return PackageResult.isDuplicate;
       } else {
         DocumentReference newPackageRef =
             await _firestore.collection('Packages').add({
@@ -144,19 +83,20 @@ class FirestoreService {
           'carrier': carrier,
           'status': status,
           'consolidatedInto': null,
-          'containsPackages': [],
           'photoUrl': null,
           'problemType': null,
-          'logs': {
-            'log1': {
-              'timestamp': FieldValue.serverTimestamp(),
-              'status': status,
-            }
-          }
         });
 
         String packageId = newPackageRef.id;
         await newPackageRef.update({'packageId': packageId});
+
+        // Add log entry
+        await _firestore.collection('Logs').add({
+          'timestamp': FieldValue.serverTimestamp(),
+          'rawTrackingNumber': rawTrackingNumber,
+          'trackingNumber': trackingNumber,
+          'status': status,
+        });
 
         return PackageResult.success;
       }
@@ -185,16 +125,11 @@ class FirestoreService {
           .get();
 
       DocumentReference consolidatedPackageRef;
-      List<Map<String, String>> existingContainsPackages = [];
       bool isNewConsolidatedPackage = false;
 
       if (existingConsolidatedPackage.docs.isNotEmpty) {
         consolidatedPackageRef =
             existingConsolidatedPackage.docs.first.reference;
-        Map<String, dynamic> data = existingConsolidatedPackage.docs.first
-            .data() as Map<String, dynamic>;
-        existingContainsPackages =
-            List<Map<String, String>>.from(data['containsPackages'] ?? []);
       } else {
         isNewConsolidatedPackage = true;
         String? consolidatedCourier =
@@ -207,13 +142,7 @@ class FirestoreService {
           'status': 'consolidated',
           'photoUrl': null,
           'problemType': null,
-          'containsPackages': [],
-          'logs': {
-            'log1': {
-              'timestamp': FieldValue.serverTimestamp(),
-              'status': 'consolidated',
-            }
-          }
+          'consolidatedInto': 'self',
         });
 
         String consolidatedPackageId = consolidatedPackageRef.id;
@@ -221,7 +150,6 @@ class FirestoreService {
             .update({'packageId': consolidatedPackageId});
       }
 
-      List<Map<String, String>> newPackagesToAdd = [];
       WriteBatch batch = _firestore.batch();
 
       for (String trackingNumber in trackingNumbersToConsolidate) {
@@ -239,54 +167,27 @@ class FirestoreService {
         }
 
         DocumentSnapshot packageDoc = packageSnapshot.docs.first;
-        Map<String, dynamic> data = packageDoc.data() as Map<String, dynamic>;
-
-        Map<String, String> packageInfo = {
-          'rawTrackingNumber': data['rawTrackingNumber'],
-          'trackingNumber': data['trackingNumber'],
-        };
-
-        if (!existingContainsPackages.contains(packageInfo)) {
-          newPackagesToAdd.add(packageInfo);
-
-          Map<String, dynamic> logs = data['logs'] as Map<String, dynamic>;
-          String newLogKey = 'log${logs.length + 1}';
-
-          batch.update(packageDoc.reference, {
-            'consolidatedInto': consolidatedPackageRef.id,
-            'status': 'consolidated',
-            'logs.$newLogKey': {
-              'timestamp': FieldValue.serverTimestamp(),
-              'status': 'consolidated',
-            }
-          });
-        }
-      }
-
-      if (newPackagesToAdd.isNotEmpty) {
-        batch.update(consolidatedPackageRef, {
-          'containsPackages': FieldValue.arrayUnion(newPackagesToAdd),
-          'status': 'consolidated',
+        batch.update(packageDoc.reference, {
+          'consolidatedInto': consolidatedPackageRef.id,
         });
 
-        if (!isNewConsolidatedPackage) {
-          DocumentSnapshot consolidatedDoc = await consolidatedPackageRef.get();
-          Map<String, dynamic> consolidatedData =
-              consolidatedDoc.data() as Map<String, dynamic>;
-          Map<String, dynamic> consolidatedLogs =
-              consolidatedData['logs'] as Map<String, dynamic>;
-          String newConsolidatedLogKey = 'log${consolidatedLogs.length + 1}';
-
-          batch.update(consolidatedPackageRef, {
-            'logs.$newConsolidatedLogKey': {
-              'timestamp': FieldValue.serverTimestamp(),
-              'status': 'consolidated',
-            }
-          });
-        }
-
-        await batch.commit();
+        // Add log entry
+        await _firestore.collection('Logs').add({
+          'timestamp': FieldValue.serverTimestamp(),
+          'rawTrackingNumber': packageDoc['rawTrackingNumber'],
+          'trackingNumber': packageDoc['trackingNumber'],
+          'status': 'consolidated',
+        });
       }
+
+      await batch.commit();
+
+      await _firestore.collection('Logs').add({
+        'timestamp': FieldValue.serverTimestamp(),
+        'rawTrackingNumber': newConsolidatedTrackingNumber,
+        'trackingNumber': newConsolidatedTrackingNumber,
+        'status': 'consolidated',
+      });
 
       return PackageResult.success;
     } catch (e) {
