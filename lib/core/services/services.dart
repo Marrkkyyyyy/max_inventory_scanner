@@ -10,24 +10,17 @@ class MyServices extends GetxService {
     return this;
   }
 
-  Future<void> saveUser(Map<String, dynamic> userData) async {
-    final String userJson = json.encode(userData);
-    await sharedPreferences.setString('userData', userJson);
+  Future<void> saveSettings(String name, String location) async {
+    await sharedPreferences.setString('name', name);
+    await sharedPreferences.setString('location', location);
   }
 
-  Map<String, dynamic>? getUser() {
-    final String? userJson = sharedPreferences.getString('userData');
-    if (userJson != null) {
-      return json.decode(userJson);
-    }
-    return null;
+  String? getName() {
+    return sharedPreferences.getString('name');
   }
 
- 
-
-  Future<void> logout() async {
-    await sharedPreferences.clear();
-    Get.offAllNamed("/");
+  String? getLocation() {
+    return sharedPreferences.getString('location');
   }
 }
 

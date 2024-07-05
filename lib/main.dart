@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:get/get.dart';
 import 'core/services/services.dart';
@@ -28,6 +29,10 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+  statusBarColor: Colors.transparent, // Make status bar transparent
+  statusBarIconBrightness: Brightness.dark, // Use dark icons for better visibility
+));
     return GetMaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Max Inventory Scanner',

@@ -18,33 +18,279 @@ class ImageBottomSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
-      child: SingleChildScrollView(
-        child: Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
-            left: 16,
-            right: 16,
-            top: 16,
+      child: Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+              left: 24,
+              right: 24,
+              top: 32,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _buildTitle(),
+                const SizedBox(height: 16),
+                _buildDescription(),
+                const SizedBox(height: 32),
+                _buildTrackingNumberTextField(context),
+                const SizedBox(height: 24),
+                _buildDropdown(),
+                Obx(() {
+                  if (controller.selectedIssue.value == 'Other') {
+                    return _buildOtherIssueTextField();
+                  }
+                  return const SizedBox.shrink();
+                }),
+                const SizedBox(height: 24),
+                _buildImagePreview(),
+                const SizedBox(height: 32),
+                _buildButtons(context),
+              ],
+            ),
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildTitle(),
-              const Divider(height: 30),
-              _buildTrackingNumberTextfield(context),
-              const SizedBox(height: 12),
-              _buildDropdown(),
-              Obx(() {
-                if (controller.selectedIssue.value == 'Other') {
-                  return _buildOtherIssueTextField();
-                }
-                return const SizedBox.shrink();
-              }),
-              _buildImagePreview(),
-              _buildButtons(context),
-              const SizedBox(height: 24)
-            ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTitle() {
+    return const Text(
+      'Report Package Issue',
+      style: TextStyle(
+        color: AppColor.darkBlue,
+        fontSize: 28,
+        fontWeight: FontWeight.bold,
+      ),
+    );
+  }
+
+  Widget _buildDescription() {
+    return const Text(
+      'Please provide details about the package issue you want to report.',
+      style: TextStyle(
+        color: Colors.grey,
+        fontSize: 16,
+      ),
+    );
+  }
+
+  Widget _buildTrackingNumberTextField(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Tracking Number',
+          style: TextStyle(
+            color: AppColor.darkBlue,
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
           ),
+        ),
+        const SizedBox(height: 12),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.grey[100],
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: TextField(
+            controller: controller.reportTrackingNumberController,
+            keyboardType: TextInputType.text,
+            decoration: InputDecoration(
+              hintText: 'Enter Tracking Number',
+              hintStyle: TextStyle(color: Colors.grey[400]),
+              border: InputBorder.none,
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              suffixIcon: IconButton(
+                onPressed: () => showScannerDialog(context),
+                icon: const Icon(
+                  Icons.qr_code_scanner_rounded,
+                  color: AppColor.blue,
+                ),
+              ),
+            ),
+            style: const TextStyle(color: AppColor.darkBlue, fontSize: 16),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDropdown() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Issue Type',
+          style: TextStyle(
+            color: AppColor.darkBlue,
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.grey[100],
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: DropdownButtonFormField<String>(
+            value: controller.selectedIssue.value.isNotEmpty
+                ? controller.selectedIssue.value
+                : null,
+            style: const TextStyle(
+              fontSize: 16,
+              color: AppColor.darkBlue,
+              fontWeight: FontWeight.w500,
+            ),
+            decoration: InputDecoration(
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              border: InputBorder.none,
+              hintText: 'Select an issue',
+              hintStyle: TextStyle(color: Colors.grey[400]),
+            ),
+            items: controller.issueItems
+                .map((String value) => DropdownMenuItem<String>(
+                      value: value,
+                      child: Text(value),
+                    ))
+                .toList(),
+            onChanged: controller.setSelectedIssue,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildOtherIssueTextField() {
+    return Padding(
+      padding: const EdgeInsets.only(top: 24.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Specify Issue',
+            style: TextStyle(
+              color: AppColor.darkBlue,
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.grey[100],
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: TextField(
+              controller: controller.otherIssueController,
+              decoration: InputDecoration(
+                hintText: 'Please describe the issue',
+                hintStyle: TextStyle(color: Colors.grey[400]),
+                border: InputBorder.none,
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              ),
+              style: const TextStyle(color: AppColor.darkBlue, fontSize: 16),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildImagePreview() {
+    return Obx(() {
+      if (controller.imagePath.isNotEmpty) {
+        return GestureDetector(
+          onTap: () {
+            Navigator.of(Get.context!).push(MaterialPageRoute(
+              builder: (context) =>
+                  ViewImage(image: controller.imagePath.value),
+            ));
+          },
+          child: Hero(
+            tag: controller.imagePath.value,
+            child: Container(
+              height: MediaQuery.of(Get.context!).size.height * .3,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                image: DecorationImage(
+                  image: FileImage(File(controller.imagePath.value)),
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
+          ),
+        );
+      }
+      return const SizedBox.shrink();
+    });
+  }
+
+  Widget _buildButtons(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: _buildButton(
+            onPressed: () async {
+              await controller.canelReportIssue();
+              Navigator.of(context).pop();
+            },
+            text: 'Cancel',
+            isPrimary: false,
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: _buildButton(
+            onPressed: () async {
+              await controller.reportIssue();
+              if (controller.imagePath.isEmpty) {
+                Navigator.of(context).pop();
+              }
+            },
+            text: 'Report Issue',
+            isPrimary: true,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildButton({
+    required VoidCallback onPressed,
+    required String text,
+    required bool isPrimary,
+  }) {
+    return ElevatedButton(
+      onPressed: onPressed,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: isPrimary ? AppColor.blue : Colors.white,
+        foregroundColor: isPrimary ? Colors.white : AppColor.blue,
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(
+            color: isPrimary ? Colors.transparent : AppColor.blue,
+            width: 1.5,
+          ),
+        ),
+        elevation: isPrimary ? 3 : 0,
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontSize: 18,
+          fontWeight: isPrimary ? FontWeight.bold : FontWeight.w600,
         ),
       ),
     );
@@ -59,190 +305,6 @@ class ImageBottomSheet extends StatelessWidget {
           controller.detectBarcode(barcode);
         },
       ),
-    );
-  }
-
-  Widget _buildTitle() {
-    return const Text(
-      'Report Issue',
-      style: TextStyle(
-        color: Colors.black87,
-        fontSize: 24.0,
-        fontWeight: FontWeight.w700,
-      ),
-    );
-  }
-
-  Widget _buildTrackingNumberTextfield(BuildContext context) {
-    return TextField(
-      controller: controller.reportTrackingNumberController,
-      keyboardType: TextInputType.text,
-      decoration: InputDecoration(
-        labelText: "Tracking No.",
-        suffixIcon: IconButton(
-          onPressed: () => showScannerDialog(context),
-          icon: const Icon(
-            Icons.qr_code_scanner_rounded,
-            size: 24,
-            color: AppColor.blue3,
-          ),
-        ),
-        isDense: true,
-        contentPadding:
-            const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-        hintText: 'Enter Tracking No.',
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: Colors.grey),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: AppColor.blue2, width: 2),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDropdown() {
-    return Material(
-      elevation: 2,
-      borderRadius: BorderRadius.circular(8),
-      color: Colors.white,
-      child: DropdownButtonFormField<String>(
-        value: controller.selectedIssue.value.isNotEmpty
-            ? controller.selectedIssue.value
-            : null,
-        style: const TextStyle(
-          fontSize: 16,
-          color: Colors.black87,
-          fontFamily: "Manrope",
-          fontWeight: FontWeight.w500,
-        ),
-        decoration: InputDecoration(
-          contentPadding:
-              const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide.none,
-          ),
-          filled: true,
-          fillColor: Colors.white,
-        ),
-        hint: const Text('Select an issue'),
-        items: controller.issueItems
-            .map((String value) => DropdownMenuItem<String>(
-                  value: value,
-                  child: Text(value),
-                ))
-            .toList(),
-        onChanged: controller.setSelectedIssue,
-        validator: (val) {
-          if (val == null || val.isEmpty) {
-            return 'Please select an issue';
-          }
-          return null;
-        },
-      ),
-    );
-  }
-
-  Widget _buildOtherIssueTextField() {
-    return Padding(
-      padding: const EdgeInsets.only(top: 12.0),
-      child: TextField(
-        controller: controller.otherIssueController,
-        decoration: const InputDecoration(
-          isDense: true,
-          contentPadding: EdgeInsets.symmetric(vertical: 12, horizontal: 12),
-          hintText: 'Please specify the issue',
-          focusedBorder: UnderlineInputBorder(
-              borderSide: BorderSide(color: AppColor.blue4)),
-          border: UnderlineInputBorder(
-              borderSide: BorderSide(color: AppColor.blue4)),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildImagePreview() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 24.0),
-      child: Obx(() {
-        if (controller.imagePath.isNotEmpty) {
-          return GestureDetector(
-            onTap: () {
-              Navigator.of(Get.context!).push(MaterialPageRoute(
-                builder: (context) =>
-                    ViewImage(image: controller.imagePath.value),
-              ));
-            },
-            child: Hero(
-              tag: controller.imagePath.value,
-              child: Image.file(
-                File(controller.imagePath.value),
-                height: MediaQuery.of(Get.context!).size.height * .3,
-                fit: BoxFit.contain,
-              ),
-            ),
-          );
-        }
-        return const SizedBox.shrink();
-      }),
-    );
-  }
-
-  Widget _buildButtons(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: ElevatedButton(
-            onPressed: () async {
-              await controller.canelReportIssue();
-              Navigator.of(context).pop();
-            },
-            style: OutlinedButton.styleFrom(
-              backgroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              side: const BorderSide(color: AppColor.blue2),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8)),
-            ),
-            child: const Text(
-              'Cancel',
-              style: TextStyle(
-                color: AppColor.blue2,
-                fontWeight: FontWeight.w600,
-                fontSize: 16,
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: ElevatedButton(
-            onPressed: () async {
-              await controller.reportIssue();
-              if (controller.imagePath.isEmpty) {
-                Navigator.of(context).pop();
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              backgroundColor: AppColor.blue2,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8)),
-            ),
-            child: const Text(
-              'Report',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-                fontSize: 16,
-              ),
-            ),
-          ),
-        ),
-      ],
     );
   }
 }

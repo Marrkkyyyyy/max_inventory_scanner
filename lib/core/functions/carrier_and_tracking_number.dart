@@ -8,9 +8,10 @@ Future<String?> identifyCourier(String? barcodeResult) async {
   final RegExp upsPattern = RegExp(r'^1Z\w{16}$');
   final RegExp uspsPattern = RegExp(r'^9\d{21}$');
   final RegExp dhlPattern = RegExp(r'^\d{10}$');
-  final RegExp fedexPattern = RegExp(r'^\d{24}$|^\d{34}$');
+  final RegExp fedexPattern = RegExp(r'^\d{12}$|^\d{24}$|^\d{34}$');
   final RegExp amazonUsPattern = RegExp(r'^TBA\w{12}$');
   final RegExp amazonCaPattern = RegExp(r'^TBC\w+$');
+  final RegExp internationalTrackedPattern = RegExp(r'^[A-Z]{2}\d{9}[A-Z]{2}$');
 
   if (upsPattern.hasMatch(barcodeResult)) {
     return "UPS";
@@ -24,6 +25,8 @@ Future<String?> identifyCourier(String? barcodeResult) async {
     return "Amazon US Logistics";
   } else if (amazonCaPattern.hasMatch(barcodeResult)) {
     return "Amazon Canada Logistics";
+  } else if (internationalTrackedPattern.hasMatch(barcodeResult)) {
+    return "International Tracked";
   } else {
     return "Unknown";
   }
@@ -57,22 +60,21 @@ String cleanBarcode(String rawScan) {
   return cleaned;
 }
 
-  Future<String> getLogisticResult(String barcode) async {
-    return await identifyCourier(barcode) ?? 'Unknown';
-  }
+Future<String> getLogisticResult(String barcode) async {
+  return await identifyCourier(barcode) ?? 'Unknown';
+}
 
-  Future<String> getDisplayTrackingNumber(
-      String logistic, String barcode) async {
-    if (logistic == 'USPS') {
-      return cleanBarcode(barcode);
-    }
-    return barcode;
+Future<String> getDisplayTrackingNumber(String logistic, String barcode) async {
+  if (logistic == 'USPS') {
+    return cleanBarcode(barcode);
   }
+  return barcode;
+}
 
-  Future<String> getInternalTrackingNumber(
-      String logistic, String displayedNumber) async {
-    if (logistic == 'FedEx' && displayedNumber.length >= 12) {
-      return displayedNumber.substring(displayedNumber.length - 12);
-    }
-    return displayedNumber;
+Future<String> getInternalTrackingNumber(
+    String logistic, String displayedNumber) async {
+  if (logistic == 'FedEx' && displayedNumber.length >= 12) {
+    return displayedNumber.substring(displayedNumber.length - 12);
   }
+  return displayedNumber;
+}

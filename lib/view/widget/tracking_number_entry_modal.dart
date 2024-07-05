@@ -1,133 +1,165 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:max_inventory_scanner/utils/snackbar_service.dart';
-import '../../core/constant/color.dart';
+import 'package:get/get.dart';
+import 'package:max_inventory_scanner/core/constant/color.dart';
 
 class TrackingNumberEntryModal extends StatelessWidget {
   final Function(String) onAdd;
   final TextEditingController controller;
 
-  const TrackingNumberEntryModal({
+  TrackingNumberEntryModal({
     super.key,
     required this.onAdd,
     required this.controller,
   });
 
+  final RxBool showError = false.obs;
+
   @override
   Widget build(BuildContext context) {
-    return FocusScope(
-      autofocus: true,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: () => FocusScope.of(context).unfocus(),
-        child: Container(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
-          ),
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              minHeight: MediaQuery.of(context).size.height * .3,
-            ),
-            child: SingleChildScrollView(
+    return GestureDetector(
+      onTap: () => FocusScope.of(context).unfocus(),
+      child: Container(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Obx(() => SingleChildScrollView(
               child: Padding(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(24),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     const Text(
-                      'Enter Tracking Number',
+                      'Add New Package',
                       style: TextStyle(
-                        fontSize: 22,
+                        color: AppColor.darkBlue,
                         fontWeight: FontWeight.bold,
+                        fontSize: 24,
                       ),
                     ),
-                    const SizedBox(height: 20),
-                    TextField(
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Enter the tracking number of the package you want to add to the inventory.',
+                      style: TextStyle(
+                        color: Colors.grey,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    _buildTextField(
+                      title: 'Tracking Number',
                       controller: controller,
-                      autofocus: true,
-                      keyboardType: TextInputType.text,
-                      decoration: InputDecoration(
-                        hintText: 'Enter Tracking No.',
-                        border: OutlineInputBorder(
+                      icon: CupertinoIcons.barcode,
+                      showError: showError.value,
+                    ),
+                    const SizedBox(height: 32),
+                    ElevatedButton(
+                      onPressed: () {
+                        final barcode = controller.text.trim();
+                        if (barcode.isNotEmpty) {
+                          showError.value = false;
+                          onAdd(barcode);
+                        } else {
+                          showError.value = true;
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColor.blue,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(color: Colors.grey),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide:
-                              const BorderSide(color: AppColor.blue2, width: 2),
                         ),
                       ),
+                      child: const Text(
+                        'Add Package',
+                        style: TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
                     ),
-                    const SizedBox(height: 20),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: () {
-                              Navigator.pop(context);
-                              controller.clear();
-                            },
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 15),
-                              side: const BorderSide(color: AppColor.blue2),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                            child: const Text(
-                              'Cancel',
-                              style: TextStyle(
-                                  color: AppColor.blue2,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600),
-                            ),
-                          ),
+                    const SizedBox(height: 16),
+                    TextButton(
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: AppColor.blue),
+                        backgroundColor: AppColor.white,
+                        foregroundColor: AppColor.blue,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
                         ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: () {
-                              final barcode = controller.text.trim();
-                              if (barcode.isNotEmpty) {
-                                onAdd(barcode);
-                              } else {
-                                SnackbarService.showCustomSnackbar(
-                                  title: 'Empty Barcode',
-                                  message: 'Please enter a valid barcode.',
-                                  backgroundColor: Colors.red,
-                                );
-                              }
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColor.blue2,
-                              padding: const EdgeInsets.symmetric(vertical: 15),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                            child: const Text(
-                              'Save',
-                              style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600),
-                            ),
-                          ),
+                      ),
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text(
+                        'Cancel',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
                         ),
-                      ],
+                      ),
                     ),
                   ],
                 ),
               ),
-            ),
+            )),
+      ),
+    );
+  }
+
+  Widget _buildTextField({
+    required String title,
+    required TextEditingController controller,
+    required IconData icon,
+    required bool showError,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            color: AppColor.darkBlue,
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
           ),
         ),
-      ),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.grey[200],
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: showError ? Colors.red : Colors.transparent,
+              width: 1.5,
+            ),
+          ),
+          child: TextField(
+            controller: controller,
+            autofocus: true,
+            decoration: InputDecoration(
+              prefixIcon: Icon(icon, color: AppColor.blue),
+              border: InputBorder.none,
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              hintText: 'Enter tracking number',
+              hintStyle: TextStyle(color: Colors.grey[400]),
+            ),
+            style: const TextStyle(color: AppColor.darkBlue),
+          ),
+        ),
+        if (showError)
+          const Padding(
+            padding: EdgeInsets.only(top: 8, left: 12),
+            child: Text(
+              'Please enter a valid tracking number',
+              style: TextStyle(color: Colors.red, fontSize: 12),
+            ),
+          ),
+      ],
     );
   }
 }

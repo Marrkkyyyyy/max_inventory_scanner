@@ -1,11 +1,12 @@
 import 'dart:io';
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:max_inventory_scanner/core/functions/carrier_and_tracking_number.dart';
+import 'package:max_inventory_scanner/core/services/services.dart';
+import 'package:max_inventory_scanner/routes.dart';
+import 'package:max_inventory_scanner/utils/snackbar_service.dart';
 import '../../class/firestore_services.dart';
 import '../../class/service_result.dart';
 
@@ -15,19 +16,46 @@ import 'package:path/path.dart' as path;
 
 class HomePageController extends GetxController {
   final FirestoreService firestoreService = FirestoreService();
-  final RxList<String> dropdownItems =
-      <String>['Receiving', 'Container', 'Roatan'].obs;
-  final RxString selectedLocation = 'Receiving'.obs;
-  final TextEditingController trackingNumberController =
-      TextEditingController();
+  final MyServices _myServices = Get.find<MyServices>();
+
   RxBool isSaving = false.obs;
 
   final List<String> issueItems = ['Damaged', 'No Name', 'No Address', 'Other'];
   final RxString imagePath = ''.obs;
   final RxString selectedIssue = ''.obs;
-  final TextEditingController otherIssueController = TextEditingController();
-  final TextEditingController reportTrackingNumberController =
-      TextEditingController();
+  late TextEditingController trackingNumberController;
+  late TextEditingController otherIssueController;
+  late TextEditingController reportTrackingNumberController;
+
+  final RxString name = ''.obs;
+  final RxString location = ''.obs;
+  final RxBool isLoading = true.obs;
+
+  @override
+  void onInit() {
+    super.onInit();
+    checkSettings();
+    trackingNumberController = TextEditingController();
+    otherIssueController = TextEditingController();
+    reportTrackingNumberController = TextEditingController();
+  }
+
+  void checkSettings() {
+    name.value = _myServices.getName() ?? '';
+    location.value = _myServices.getLocation() ?? '';
+
+    if (name.isEmpty || location.isEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Get.offAllNamed(AppRoute.settingsPage)!.then((_) {
+          name.value = _myServices.getName() ?? '';
+          location.value = _myServices.getLocation() ?? '';
+          isLoading.value = false;
+        });
+      });
+    } else {
+      isLoading.value = false;
+    }
+  }
 
   Future<PackageResult> processAndSavePackage(String barcode) async {
     if (isSaving.value) return PackageResult.failure;
@@ -44,17 +72,13 @@ class HomePageController extends GetxController {
           carrier: carrier,
           rawTrackingNumber: displayedTrackingNumber,
           trackingNumber: internalTrackingNumber,
-          status: selectedLocation.value);
+          status: location.value);
     } catch (e) {
       return PackageResult.failure;
     } finally {
       isSaving.value = false;
       EasyLoading.dismiss();
     }
-  }
-
-  void setSelectedItem(String value) {
-    selectedLocation.value = value;
   }
 
   void detectBarcode(String barcode) {
@@ -77,8 +101,17 @@ class HomePageController extends GetxController {
     if (selectedIssue.isEmpty ||
         imagePath.isEmpty ||
         reportTrackingNumberController.text.isEmpty) {
-      Get.snackbar(
-          'Error', 'Please fill all required fields and take a picture');
+      SnackbarService.showCustomSnackbar(
+          title: 'Error',
+          message: 'Please fill all required fields and take a picture');
+
+      return;
+    }
+
+    if (selectedIssue.value == 'Other' &&
+        otherIssueController.text.trim().isEmpty) {
+      SnackbarService.showCustomSnackbar(
+          title: 'Error', message: 'Please specify the issue');
       return;
     }
 
@@ -86,7 +119,8 @@ class HomePageController extends GetxController {
 
     try {
       String issue = selectedIssue.value;
-      String problemType = issue == 'Other' ? otherIssueController.text : issue;
+      String problemType =
+          issue == 'Other' ? otherIssueController.text.trim() : issue;
 
       final dir = await getTemporaryDirectory();
       final targetPath = path.join(
@@ -113,14 +147,20 @@ class HomePageController extends GetxController {
       );
 
       if (result == PackageResult.success) {
-        Get.snackbar('Success', 'Issue reported successfully');
+        SnackbarService.showCustomSnackbar(
+            title: 'Success',
+            message: 'Issue reported successfully',
+            backgroundColor: Colors.teal.shade400);
       } else if (result == PackageResult.noInternet) {
-        Get.snackbar('Error', 'No internet connection');
+        SnackbarService.showCustomSnackbar(
+            title: 'Error', message: 'No internet connection');
       } else {
-        Get.snackbar('Error', 'Failed to report issue');
+        SnackbarService.showCustomSnackbar(
+            title: 'Error', message: 'Failed to report issue');
       }
     } catch (e) {
-      Get.snackbar('Error', 'An unexpected error occurred: ${e.toString()}');
+      SnackbarService.showCustomSnackbar(
+          title: 'Error', message: 'An unexpected error occurred');
     } finally {
       EasyLoading.dismiss();
 
@@ -138,11 +178,9 @@ class HomePageController extends GetxController {
     reportTrackingNumberController.clear();
   }
 
-  @override
-  void onClose() {
-    trackingNumberController.dispose();
-    otherIssueController.dispose();
-    reportTrackingNumberController.dispose();
-    super.onClose();
+  void resetTrackingNumberController() {
+    trackingNumberController.clear();
+    otherIssueController.clear();
+    reportTrackingNumberController.clear();
   }
 }

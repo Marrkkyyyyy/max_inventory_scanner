@@ -1,8 +1,9 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:max_inventory_scanner/core/class/error_handler.dart';
 import 'package:max_inventory_scanner/core/class/service_result.dart';
+import 'package:max_inventory_scanner/core/constant/color.dart';
 import 'package:max_inventory_scanner/core/constant/image_asset.dart';
 import 'package:max_inventory_scanner/core/controller/home/home_page_controller.dart';
 import 'package:max_inventory_scanner/utils/custom_scanner.dart';
@@ -11,6 +12,70 @@ import 'package:max_inventory_scanner/view/widget/home/damaged/image_bottom_shee
 import 'package:max_inventory_scanner/view/widget/home/scan/modal_barcode_result.dart';
 import 'package:max_inventory_scanner/view/widget/tracking_number_entry_modal.dart';
 
+Widget customHeader(String name, String location) {
+  return Container(
+    padding: const EdgeInsets.all(8),
+    decoration: const BoxDecoration(
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black26,
+            offset: Offset(1, 3),
+            blurRadius: 3.0,
+            spreadRadius: 0,
+          ),
+        ],
+        color: AppColor.lightSky,
+        borderRadius: BorderRadius.all(Radius.circular(8))),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        const Icon(
+          CupertinoIcons.person_circle_fill,
+          size: 70,
+          color: AppColor.darkBlue,
+        ),
+        const SizedBox(
+          width: 12,
+        ),
+        Expanded(
+            child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
+            Text(
+              name,
+              style: const TextStyle(
+                  fontSize: 18,
+                  color: AppColor.darkBlue,
+                  fontWeight: FontWeight.bold),
+            ),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                Text(
+                  location,
+                  style: const TextStyle(
+                      fontSize: 18,
+                      color: Colors.black54,
+                      fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(
+                  width: 4,
+                ),
+                const Icon(
+                  CupertinoIcons.location_solid,
+                  color: Colors.red,
+                )
+              ],
+            )
+          ],
+        ))
+      ],
+    ),
+  );
+}
+
 Widget imageDisplay() {
   return Material(
     elevation: 2,
@@ -18,53 +83,6 @@ Widget imageDisplay() {
     child: ClipRRect(
       borderRadius: BorderRadius.circular(8),
       child: Image.asset(AppImageASset.mobileScan),
-    ),
-  );
-}
-
-Widget dropdownSelector(HomePageController controller) {
-  return Material(
-    elevation: 4,
-    borderRadius: BorderRadius.circular(8),
-    color: Colors.white,
-    child: Container(
-      padding: const EdgeInsets.only(left: 10, right: 15, bottom: 5, top: 5),
-      width: Get.width,
-      child: Obx(() => DropdownButtonFormField<String>(
-            style: const TextStyle(
-                fontSize: 16,
-                color: Colors.black87,
-                fontFamily: "Manrope",
-                fontWeight: FontWeight.w500),
-            decoration: InputDecoration(
-              contentPadding:
-                  const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide.none,
-              ),
-              filled: true,
-              fillColor: Colors.white,
-            ),
-            validator: (val) {
-              if (val == null || val.isEmpty) {
-                return 'Please select address';
-              }
-              return null;
-            },
-            onChanged: (val) {
-              if (val != null) {
-                controller.setSelectedItem(val);
-              }
-            },
-            value: controller.selectedLocation.value,
-            items: controller.dropdownItems.map((String item) {
-              return DropdownMenuItem<String>(
-                value: item,
-                child: Text(item),
-              );
-            }).toList(),
-          )),
     ),
   );
 }
@@ -105,6 +123,13 @@ void _showBottomSheet(
               await controller.processAndSavePackage(barcode);
           _handlePackageResult(result, context, controller);
         },
+        onSave: () async {
+          if (controller.isSaving.value) return;
+
+          PackageResult result =
+              await controller.processAndSavePackage(barcode);
+          _handlePackageResult(result, context, controller, isSave: true);
+        },
       );
     },
   );
@@ -112,10 +137,10 @@ void _showBottomSheet(
 
 void _handlePackageResult(
     PackageResult result, BuildContext context, HomePageController controller,
-    {bool isManualEntry = false}) {
+    {bool isManualEntry = false, bool isSave = false}) {
   if (result == PackageResult.success) {
     Navigator.of(context).pop();
-    if (!isManualEntry) {
+    if (!isManualEntry && !isSave) {
       showScannerAndBottomSheet(context, controller);
     }
   } else if (result == PackageResult.isDuplicate) {
