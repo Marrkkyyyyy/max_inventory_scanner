@@ -1,27 +1,22 @@
-import 'dart:io';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:get/get.dart';
-import 'core/services/services.dart';
-import 'routes.dart';
+import 'core/constant/strings.dart';
+import 'core/services/http_override_service.dart';
+import 'core/theme/app_theme.dart';
+import 'core/utils/status_bar_config.dart';
+import 'dependency/dependency_injection.dart';
+import 'routes/routes.dart';
 
 void main() async {
-  HttpOverrides.global = MyHttpOverrides();
   WidgetsFlutterBinding.ensureInitialized();
-  await initialServices();
-  await Firebase.initializeApp();
+  await _initializeApp();
   runApp(const MyApp());
 }
 
-class MyHttpOverrides extends HttpOverrides {
-  @override
-  HttpClient createHttpClient(SecurityContext? context) {
-    return super.createHttpClient(context)
-      ..badCertificateCallback =
-          (X509Certificate cert, String host, int port) => true;
-  }
+Future<void> _initializeApp() async {
+  HttpOverrideService.initialize();
+  await DependencyInjection.init();
 }
 
 class MyApp extends StatelessWidget {
@@ -29,25 +24,13 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-  statusBarColor: Colors.transparent, // Make status bar transparent
-  statusBarIconBrightness: Brightness.dark, // Use dark icons for better visibility
-));
+    StatusBarConfig.configure();
     return GetMaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Max Inventory Scanner',
-      theme: ThemeData(
-        appBarTheme: const AppBarTheme(
-            backgroundColor: Colors.blue,
-            foregroundColor: Colors.white,
-            titleTextStyle: TextStyle(
-                fontWeight: FontWeight.w600,
-                fontFamily: "Manrope",
-                fontSize: 22)),
-        primarySwatch: Colors.blue,
-        fontFamily: 'Manrope',
-      ),
-      getPages: routes,
+      title: AppStrings.appName,
+      theme: AppTheme.lightTheme,
+      initialRoute: AppRoute.HOME,
+      getPages: AppPages.routes,
       builder: EasyLoading.init(),
     );
   }

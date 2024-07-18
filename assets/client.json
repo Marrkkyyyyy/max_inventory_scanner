@@ -1,0 +1,52 @@
+[
+    {
+      "firstName": "Alex",
+      "lastName": "Morgan",
+      "accountNumber": 789
+    },
+    {
+      "firstName": "Sam",
+      "lastName": "Taylor",
+      "accountNumber": 1234
+    },
+    {
+      "firstName": "Jordan",
+      "lastName": "Quinn",
+      "accountNumber": 5678
+    },
+    {
+      "firstName": "Casey",
+      "lastName": "Parker",
+      "accountNumber": 2468
+    },
+    {
+      "firstName": "Riley",
+      "lastName": "Johnson",
+      "accountNumber": 1357
+    },
+    {
+      "firstName": "Taylor",
+      "lastName": "Smith",
+      "accountNumber": 9876
+    },
+    {
+      "firstName": "Morgan",
+      "lastName": "Lee",
+      "accountNumber": 3698
+    },
+    {
+      "firstName": "Jamie",
+      "lastName": "Brown",
+      "accountNumber": 7410
+    },
+    {
+      "firstName": "Charlie",
+      "lastName": "Davis",
+      "accountNumber": 8520
+    },
+    {
+      "firstName": "Avery",
+      "lastName": "Wilson",
+      "accountNumber": 9630
+    }
+  ]

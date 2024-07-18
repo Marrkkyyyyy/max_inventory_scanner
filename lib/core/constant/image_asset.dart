@@ -7,7 +7,6 @@ class AppImageASset {
   static const String server = "$rootLottie/server.json";
   static const String nomessage = "$rootLottie/nomessage.json";
 
-  static const String googleLogo = "$rootImages/google.png";
   static const String mobileScan = "$rootImages/mobile_scan.jpeg";
   static const String consolidation = "$rootImages/consolidation.png";
 }
