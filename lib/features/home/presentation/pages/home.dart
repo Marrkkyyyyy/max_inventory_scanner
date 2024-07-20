@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -141,6 +140,7 @@ class HomePage extends GetView<HomeController> {
       } else if (navigationResult is Map &&
           navigationResult['result'] == 'success') {
         SnackbarService.showCustomSnackbar(
+            duration: const Duration(seconds: 1, milliseconds: 500),
             title: "Success",
             message: "Package saved successfully",
             backgroundColor: AppColor.teal);
@@ -181,6 +181,7 @@ class HomePage extends GetView<HomeController> {
       } else if (navigationResult is Map &&
           navigationResult['result'] == 'success') {
         SnackbarService.showCustomSnackbar(
+            duration: const Duration(seconds: 1),
             title: "Success",
             message: "Package saved successfully",
             backgroundColor: AppColor.teal);

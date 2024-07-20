@@ -85,5 +85,4 @@ class PackageActionButtonsWidget extends GetView<PackageDetailsController> {
       ),
     );
   }
-
 }

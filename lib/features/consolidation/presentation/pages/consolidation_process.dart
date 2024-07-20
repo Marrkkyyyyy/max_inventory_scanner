@@ -2,14 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:max_inventory_scanner/core/theme/color.dart';
 import 'package:max_inventory_scanner/core/widgets/custom_confirmation_dialog.dart';
-import 'package:max_inventory_scanner/core/widgets/custom_scanner.dart';
-import 'package:max_inventory_scanner/core/widgets/tracking_number_entry_modal.dart';
 import 'package:max_inventory_scanner/features/consolidation/presentation/controller/consolidation_process_controller.dart';
-import 'package:max_inventory_scanner/features/consolidation/presentation/widgets/detected_barcode_list.dart';
-import 'package:max_inventory_scanner/features/consolidation/presentation/widgets/main_package_info.dart';
-import 'package:max_inventory_scanner/features/consolidation/presentation/widgets/measurement_section.dart';
-import 'package:max_inventory_scanner/features/consolidation/presentation/widgets/package_measurement_dialog.dart';
-import 'package:max_inventory_scanner/features/consolidation/presentation/widgets/scan_option.dart';
+import 'package:max_inventory_scanner/features/consolidation/presentation/widgets/consolidation_process/detected_barcode_list.dart';
+import 'package:max_inventory_scanner/features/consolidation/presentation/widgets/consolidation_process/main_package_info.dart';
 
 class ConsolidationProcess extends GetView<ConsolidationProcessController> {
   const ConsolidationProcess({super.key});
@@ -22,7 +17,7 @@ class ConsolidationProcess extends GetView<ConsolidationProcessController> {
       child: Scaffold(
         backgroundColor: AppColor.white,
         appBar: _buildAppBar(context),
-        body: _buildBody(context, controller),
+        body: _buildBody(context),
       ),
     );
   }
@@ -40,8 +35,7 @@ class ConsolidationProcess extends GetView<ConsolidationProcessController> {
     );
   }
 
-  Widget _buildBody(
-      BuildContext context, ConsolidationProcessController controller) {
+  Widget _buildBody(BuildContext context) {
     return ConstrainedBox(
       constraints: BoxConstraints(
         minHeight: MediaQuery.of(context).size.height -
@@ -55,21 +49,10 @@ class ConsolidationProcess extends GetView<ConsolidationProcessController> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               MainPackageInfo(controller: controller),
-              const SizedBox(height: 4),
-              MeasurementsSection(
-                  controller: controller,
-                  onEdit: () => _showMeasurementDialog(controller)),
               const SizedBox(height: 12),
-              DetectedBarcodesList(
-                  controller: controller,
-                  onRemove: _showRemoveConfirmationDialog),
+              _buildDetectedBarcodesList(context),
               const SizedBox(height: 16),
-              ScanOptions(
-                onManualEntry: () => _showTrackingNumberEntry(context),
-                onScan: () => _showScannerDialog(context),
-              ),
-              const SizedBox(height: 16),
-              _buildDoneConsolidateButton(context, controller),
+              _buildCompleteConsolidationButton(context),
             ],
           ),
         ),
@@ -77,12 +60,24 @@ class ConsolidationProcess extends GetView<ConsolidationProcessController> {
     );
   }
 
-  Widget _buildDoneConsolidateButton(
-      BuildContext context, ConsolidationProcessController controller) {
+  Widget _buildDetectedBarcodesList(BuildContext context) {
+    return Expanded(
+      child: DetectedBarcodesList(
+        controller: controller,
+        onTap: (index) => controller.showBarcodeDetectedBottomSheet(
+            context, controller.detectedPackages[index], index),
+        onRemove: controller.removeDetectedPackage,
+        onManualEntry: () => controller.showTrackingNumberEntry(context),
+        onScan: () => controller.showScannerDialog(context),
+      ),
+    );
+  }
+
+  Widget _buildCompleteConsolidationButton(BuildContext context) {
     return Obx(() => ElevatedButton.icon(
           onPressed: controller.isConsolidating.value
               ? null
-              : controller.consolidatePackages,
+              : () => controller.showMeasurementBottomSheet(context),
           icon: const Icon(Icons.check_circle_outline, size: 24),
           label: const Text("Complete Consolidation"),
           style: ElevatedButton.styleFrom(
@@ -93,68 +88,6 @@ class ConsolidationProcess extends GetView<ConsolidationProcessController> {
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
         ));
-  }
-
-  void _showRemoveConfirmationDialog(BuildContext context, int index) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) => CustomConfirmationDialog(
-        message: "Are you sure you want to remove this package?",
-        onCancel: () => Navigator.of(context).pop(),
-        onConfirm: () {
-          controller.removeDetectedBarcode(index);
-          Navigator.of(context).pop();
-        },
-        titleText: "Confirm Removal",
-        cancelText: "Cancel",
-        confirmText: "Remove",
-        confirmTextColor: Colors.red,
-      ),
-    );
-  }
-
-  void _showScannerDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) => CustomScanner(
-        onBarcodeDetected: (barcode) {
-          Navigator.of(context).pop();
-          controller.addDetectedBarcode(barcode);
-        },
-      ),
-    );
-  }
-
-  void _showTrackingNumberEntry(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (BuildContext context) => TrackingNumberEntryModal(
-        onAdd: (val) {
-          if (controller.addDetectedBarcode(val)) {
-            Navigator.of(context).pop();
-            controller.trackingNumberController.clear();
-          }
-        },
-        controller: controller.trackingNumberController,
-      ),
-    );
-  }
-
-  void _showMeasurementDialog(ConsolidationProcessController controller) {
-    showDialog(
-      context: Get.context!,
-      builder: (BuildContext context) => PackageMeasurementDialog(
-        lengthController: controller.lengthController,
-        weightController: controller.weightController,
-        heightController: controller.heightController,
-        onSave: () {
-          controller.update();
-          Navigator.of(context).pop();
-        },
-      ),
-    );
   }
 
   Future<void> _handlePopScope(BuildContext context, bool didPop) async {

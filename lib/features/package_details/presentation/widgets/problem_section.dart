@@ -4,6 +4,7 @@ import 'package:max_inventory_scanner/core/constant/strings.dart';
 import 'package:max_inventory_scanner/core/theme/color.dart';
 import 'package:max_inventory_scanner/features/package_details/presentation/controller/package_details_controller.dart';
 import 'package:max_inventory_scanner/features/package_details/presentation/widgets/image_view.dart';
+
 class ProblemSection extends GetView<PackageDetailsController> {
   const ProblemSection({super.key});
 
@@ -22,13 +23,19 @@ class ProblemSection extends GetView<PackageDetailsController> {
                   },
                   activeColor: AppColor.blue,
                 ),
-                const Text('Damaged Package',
+                const Text('Take a Photo',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w400,
                     )),
                 const Spacer(),
-                TextButton(
+                TextButton.icon(
+                  icon: Icon(
+                    controller.isImageCaptured.value
+                        ? Icons.image
+                        : Icons.camera_alt_rounded,
+                    color: AppColor.white,
+                  ),
                   onPressed: controller.isImageCaptured.value
                       ? _showImageViewDialog
                       : () {
@@ -45,7 +52,7 @@ class ProblemSection extends GetView<PackageDetailsController> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  child: Text(
+                  label: Text(
                     controller.isImageCaptured.value
                         ? "View Photo"
                         : "Take a Photo",
@@ -66,46 +73,35 @@ class ProblemSection extends GetView<PackageDetailsController> {
                   labelText: 'Problem Type',
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(4),
-                    borderSide: BorderSide(
-                      color: controller.isProblemTypeValid.value
-                          ? AppColor.blue
-                          : AppColor.darkRed,
-                    ),
+                    borderSide: const BorderSide(color: AppColor.blue),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(4),
-                    borderSide: BorderSide(
-                      color: controller.isProblemTypeValid.value
-                          ? AppColor.blue
-                          : AppColor.darkRed,
-                    ),
+                    borderSide: const BorderSide(color: AppColor.blue),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(4),
-                    borderSide: BorderSide(
-                      color: controller.isProblemTypeValid.value
-                          ? AppColor.blue
-                          : AppColor.darkRed,
-                      width: 2,
-                    ),
+                    borderSide:
+                        const BorderSide(color: AppColor.blue, width: 2),
                   ),
-                  errorText: controller.isProblemTypeValid.value
-                      ? null
-                      : 'Please select a problem type',
                   contentPadding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                 ),
-                items: AppStrings.problemTypes
-                    .map((type) => DropdownMenuItem(
-                          value: type,
-                          child: Text(type),
-                        ))
-                    .toList(),
+                items: [
+                  const DropdownMenuItem<String>(
+                    value: null,
+                    child: Text('No Problem Type Selected'),
+                  ),
+                  ...AppStrings.problemTypes.map((type) => DropdownMenuItem(
+                        value: type,
+                        child: Text(type),
+                      )),
+                ],
                 onChanged: (value) {
                   controller.selectProblemType(value);
                   FocusScope.of(context).unfocus();
                 },
-                hint: const Text('Select problem type'),
+                hint: const Text('Select problem type (optional)'),
               ),
               if (controller.showOtherProblemField.value) ...[
                 const SizedBox(height: 12),
@@ -151,6 +147,7 @@ class ProblemSection extends GetView<PackageDetailsController> {
           ],
         ));
   }
+
   void _showImageViewDialog() {
     Get.dialog(
       ImageViewDialog(

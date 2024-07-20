@@ -15,15 +15,7 @@ class DialogService {
     );
   }
 
-  Future<bool?> showDamagedPackageConfirmationDialog() async {
-    return _showCustomDialog(
-      icon: Icons.warning,
-      title: 'Confirm Problem',
-      content: 'Are you sure you want to mark this package as damaged?',
-      confirmText: 'Confirm',
-      cancelText: 'Cancel',
-    );
-  }
+
 
   Future<bool?> showConsolidationConfirmationDialog(
       bool isSinglePackage) async {

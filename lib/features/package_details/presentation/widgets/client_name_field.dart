@@ -5,7 +5,6 @@ import 'package:max_inventory_scanner/features/package_details/presentation/cont
 
 class ClientNameFieldWidget extends GetView<PackageDetailsController> {
   const ClientNameFieldWidget({super.key});
-
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -16,7 +15,7 @@ class ClientNameFieldWidget extends GetView<PackageDetailsController> {
               children: [
                 Focus(
                   onFocusChange: (hasFocus) {
-                    controller.isTextFieldFocused.value = hasFocus;
+                    controller.onClientNameFocusChanged(hasFocus);
                   },
                   child: TextField(
                     controller: controller.clientNameController,
@@ -60,38 +59,47 @@ class ClientNameFieldWidget extends GetView<PackageDetailsController> {
                         fontSize: 12,
                       ),
                     ),
-                    onChanged: (_) => controller.validateClientName(),
+                    onChanged: (_) => controller.onClientNameChanged(),
+                    onSubmitted: (_) => controller.onClientNameSubmitted(),
                   ),
                 ),
-                if (controller.clientNameController.text.isNotEmpty &&
-                    controller.showSuggestions.value &&
-                    controller.isTextFieldFocused.value)
-                  controller.clientSuggestions.isEmpty
-                      ? _buildNoSuggestionsFound()
-                      : _buildSuggestions(),
+                if (controller.isWarningVisible.value)
+                  Container(
+                    margin: const EdgeInsets.only(top: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: AppColor.warn2.withOpacity(0.1),
+                      border: Border.all(color: AppColor.warn2),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(
+                          Icons.warning_amber,
+                          color: AppColor.warn2,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            controller.nameNotInListWarning.value,
+                            style: const TextStyle(
+                              color: AppColor.warn2,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                if (controller.showSuggestions.value &&
+                    !controller.isWarningVisible.value)
+                  _buildSuggestions(),
               ],
             )),
       ],
-    );
-  }
-
-  Widget _buildNoSuggestionsFound() {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-      decoration: BoxDecoration(
-        color: AppColor.white,
-        border: Border.all(color: Colors.grey.shade300),
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: const Text(
-        'No name found',
-        style: TextStyle(
-          fontSize: 16,
-          color: Colors.black54,
-          fontWeight: FontWeight.w400,
-          fontStyle: FontStyle.italic,
-        ),
-      ),
     );
   }
 

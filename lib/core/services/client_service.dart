@@ -18,4 +18,13 @@ class ClientService {
         .take(5)
         .toList();
   }
+
+  bool isNameInList(String name) {
+    return allClients
+        .any((client) => client.toLowerCase() == name.trim().toLowerCase());
+  }
+
+  bool isExactMatch(String name) {
+    return allClients.contains(name.trim());
+  }
 }
