@@ -1,16 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:max_inventory_scanner/core/theme/color.dart';
 import 'package:max_inventory_scanner/features/consolidation/presentation/controller/consolidation_process_controller.dart';
 
 class MeasurementBottomSheet extends StatelessWidget {
   final ConsolidationProcessController controller;
-  final VoidCallback onSaveAndNext;
   final VoidCallback onSaveAndExit;
 
   const MeasurementBottomSheet({
     super.key,
     required this.controller,
-    required this.onSaveAndNext,
     required this.onSaveAndExit,
   });
 
@@ -43,18 +42,20 @@ class MeasurementBottomSheet extends StatelessWidget {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
-          _buildTextField('Length', controller.lengthController,
-              autofocus: true),
+          _buildTextField(
+              'Length', controller.lengthController, controller.lengthError),
           const SizedBox(height: 12),
-          _buildTextField('Weight', controller.weightController),
+          _buildTextField(
+              'Weight', controller.weightController, controller.weightError),
           const SizedBox(height: 12),
-          _buildTextField('Height', controller.heightController),
+          _buildTextField(
+              'Height', controller.heightController, controller.heightError),
           const SizedBox(height: 24),
           Row(
             children: [
               Expanded(
                 child: _buildButton(
-                  onPressed: () {},
+                  onPressed: () => _onSave(onSaveAndExit),
                   text: 'Save & Exit',
                   icon: Icons.check_circle_outline,
                   isPrimary: false,
@@ -63,7 +64,7 @@ class MeasurementBottomSheet extends StatelessWidget {
               const SizedBox(width: 16),
               Expanded(
                 child: _buildButton(
-                  onPressed: () {},
+                  onPressed: () => controller.saveAndNext(context),
                   text: 'Save & Next',
                   icon: Icons.save_alt_rounded,
                   isPrimary: true,
@@ -74,6 +75,40 @@ class MeasurementBottomSheet extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Widget _buildTextField(
+      String label, TextEditingController textController, RxString errorText) {
+    return Obx(() => TextField(
+          controller: textController,
+          decoration: InputDecoration(
+            labelText: label,
+            errorText: errorText.value.isNotEmpty ? errorText.value : null,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderSide: BorderSide(
+                  color: errorText.value.isEmpty ? AppColor.blue : Colors.red),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderSide: BorderSide(
+                  color: errorText.value.isEmpty ? AppColor.blue : Colors.red,
+                  width: 2),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderSide: const BorderSide(color: Colors.red),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderSide: const BorderSide(color: Colors.red, width: 2),
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+          keyboardType: TextInputType.number,
+        ));
   }
 
   Widget _buildButton({
@@ -110,29 +145,9 @@ class MeasurementBottomSheet extends StatelessWidget {
     );
   }
 
-  Widget _buildTextField(String label, TextEditingController textController,
-      {bool autofocus = false}) {
-    return TextField(
-      controller: textController,
-      autofocus: autofocus,
-      decoration: InputDecoration(
-        enabledBorder: OutlineInputBorder(
-          borderSide: const BorderSide(color: AppColor.blue),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderSide: const BorderSide(color: AppColor.blue, width: 1.7),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        labelText: label,
-        border: OutlineInputBorder(
-          borderSide: const BorderSide(color: AppColor.blue),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        filled: true,
-        fillColor: Colors.grey[100],
-      ),
-      keyboardType: TextInputType.number,
-    );
+  void _onSave(VoidCallback saveAction) {
+    if (controller.validateMeasurements()) {
+      saveAction();
+    }
   }
 }

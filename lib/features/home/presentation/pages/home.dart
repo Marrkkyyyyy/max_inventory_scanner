@@ -8,10 +8,10 @@ import 'package:max_inventory_scanner/core/utils/snackbar_service.dart';
 import 'package:max_inventory_scanner/core/widgets/custom_scanner.dart';
 import 'package:max_inventory_scanner/core/widgets/tracking_number_entry_modal.dart';
 import 'package:max_inventory_scanner/features/home/controller/home_controller.dart';
-import 'package:max_inventory_scanner/features/home/presentation/pages/consolidation.dart';
 import 'package:max_inventory_scanner/features/home/presentation/widgets/action_button.dart';
 import 'package:max_inventory_scanner/features/home/presentation/widgets/custom_header.dart';
 import 'package:max_inventory_scanner/features/home/presentation/widgets/image_display.dart';
+
 import 'package:max_inventory_scanner/routes/routes.dart';
 
 class HomePage extends GetView<HomeController> {
@@ -19,57 +19,37 @@ class HomePage extends GetView<HomeController> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColor.white,
-      appBar: AppBar(
-        title: Text(
-          AppStrings.appName,
-          style: TextStyles.appBarTextStyle(
-            textColor: AppColor.darkBlue,
+    return Obx(() {
+      if (controller.isLoading.value) {
+        return const Scaffold(
+          body: Center(child: CircularProgressIndicator()),
+        );
+      } else if (controller.location.value == 'Consolidation') {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          Get.offAllNamed(AppRoute.CONSOLIDATION);
+        });
+        return const Scaffold(
+          body: Center(child: CircularProgressIndicator()),
+        );
+      } else {
+        return Scaffold(
+          backgroundColor: AppColor.white,
+          appBar: AppBar(
+            title: Text(
+              AppStrings.appName,
+              style: TextStyles.appBarTextStyle(
+                textColor: AppColor.darkBlue,
+              ),
+            ),
+            centerTitle: true,
+            systemOverlayStyle: SystemUiOverlayStyle.dark,
+            backgroundColor: Colors.transparent,
+            elevation: 0,
           ),
-        ),
-        centerTitle: true,
-        systemOverlayStyle: SystemUiOverlayStyle.dark,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        // actions: [
-        //   IconButton(
-        //       onPressed: () {
-        //         Get.toNamed(AppRoute.SETTINGS);
-        //       },
-        //       icon: const Icon(
-        //         CupertinoIcons.settings,
-        //         size: 24,
-        //         color: AppColor.darkBlue,
-        //       ))
-        // ],
-      ),
-      body: Obx(() {
-        if (controller.isLoading.value) {
-          return const Center(child: CircularProgressIndicator());
-        } else {
-          return controller.location.value == 'Consolidation'
-              ? _buildConsolidation(context, controller)
-              : _buildHomePage(context);
-        }
-      }),
-    );
-  }
-
-  Widget _buildConsolidation(BuildContext context, HomeController controller) {
-    return SingleChildScrollView(
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            customHeader(controller.name.value, controller.location.value),
-            const SizedBox(height: 20),
-            buildConsolidationContent(context),
-          ],
-        ),
-      ),
-    );
+          body: _buildHomePage(context),
+        );
+      }
+    });
   }
 
   Widget _buildHomePage(BuildContext context) {

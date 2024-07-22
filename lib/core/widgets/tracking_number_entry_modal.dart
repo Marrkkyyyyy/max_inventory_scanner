@@ -35,7 +35,7 @@ class TrackingNumberEntryModal extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     const Text(
-                      'Add New Package',
+                      'Tracking Number',
                       style: TextStyle(
                         color: AppColor.darkBlue,
                         fontWeight: FontWeight.bold,

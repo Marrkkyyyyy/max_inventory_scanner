@@ -1,11 +1,10 @@
-
 import 'package:flutter/material.dart';
 import 'package:max_inventory_scanner/core/theme/color.dart';
 
 class TrackingNumberDisplay extends StatelessWidget {
   final String trackingNumber;
 
-  const TrackingNumberDisplay({Key? key, required this.trackingNumber}) : super(key: key);
+  const TrackingNumberDisplay({super.key, required this.trackingNumber});
 
   @override
   Widget build(BuildContext context) {

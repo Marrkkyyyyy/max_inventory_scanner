@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:max_inventory_scanner/core/theme/color.dart';
 import 'package:max_inventory_scanner/core/widgets/custom_confirmation_dialog.dart';
 import 'package:max_inventory_scanner/features/consolidation/presentation/controller/consolidation_process_controller.dart';
+import 'package:max_inventory_scanner/features/consolidation/presentation/widgets/consolidation_process/client_name_field.dart';
 import 'package:max_inventory_scanner/features/consolidation/presentation/widgets/consolidation_process/detected_barcode_list.dart';
 import 'package:max_inventory_scanner/features/consolidation/presentation/widgets/consolidation_process/main_package_info.dart';
 
@@ -14,10 +15,16 @@ class ConsolidationProcess extends GetView<ConsolidationProcessController> {
     return PopScope(
       canPop: false,
       onPopInvoked: (didPop) => _handlePopScope(context, didPop),
-      child: Scaffold(
-        backgroundColor: AppColor.white,
-        appBar: _buildAppBar(context),
-        body: _buildBody(context),
+      child: GestureDetector(
+        onTap: () {
+          FocusScope.of(context).unfocus();
+        },
+        child: Scaffold(
+          backgroundColor: AppColor.white,
+          appBar: _buildAppBar(context),
+          body: _buildBody(context),
+          bottomNavigationBar: _buildCompleteConsolidationButton(context),
+        ),
       ),
     );
   }
@@ -48,11 +55,12 @@ class ConsolidationProcess extends GetView<ConsolidationProcessController> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              MainPackageInfo(controller: controller),
+              controller.isNewBox.value
+                  ? const ConsolidationClientNameFieldWidget()
+                  : const SizedBox(),
+              const MainPackageInfo(),
               const SizedBox(height: 12),
               _buildDetectedBarcodesList(context),
-              const SizedBox(height: 16),
-              _buildCompleteConsolidationButton(context),
             ],
           ),
         ),
@@ -74,18 +82,21 @@ class ConsolidationProcess extends GetView<ConsolidationProcessController> {
   }
 
   Widget _buildCompleteConsolidationButton(BuildContext context) {
-    return Obx(() => ElevatedButton.icon(
-          onPressed: controller.isConsolidating.value
-              ? null
-              : () => controller.showMeasurementBottomSheet(context),
-          icon: const Icon(Icons.check_circle_outline, size: 24),
-          label: const Text("Complete Consolidation"),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColor.blue,
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    return Obx(() => Container(
+          padding: const EdgeInsets.all(12),
+          child: ElevatedButton.icon(
+            onPressed: controller.isConsolidating.value
+                ? null
+                : () => controller.showMeasurementBottomSheet(context),
+            icon: const Icon(Icons.check_circle_outline, size: 24),
+            label: const Text("Complete Consolidation"),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColor.blue,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
           ),
         ));
   }

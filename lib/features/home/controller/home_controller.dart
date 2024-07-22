@@ -13,6 +13,8 @@ class HomeController extends GetxController {
   final RxBool isLoading = true.obs;
   final TextEditingController trackingNumberController =
       TextEditingController();
+       final TextEditingController manualTrackingNumberController =
+      TextEditingController();
 
   @override
   void onInit() {

@@ -1,28 +1,49 @@
 import 'dart:io';
 
+import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
+import 'package:max_inventory_scanner/core/services/client_service.dart';
 import 'package:max_inventory_scanner/core/services/dialog_service.dart';
 import 'package:max_inventory_scanner/core/services/image_service.dart';
+import 'package:max_inventory_scanner/core/services/shared_preferences_service.dart';
 import 'package:max_inventory_scanner/core/utils/snackbar_service.dart';
 import 'package:max_inventory_scanner/features/consolidation/data/model/package_info_model.dart';
 import 'package:max_inventory_scanner/features/consolidation/data/repository/consolidation_repository.dart';
+import 'package:max_inventory_scanner/features/consolidation/presentation/controller/consolidation_controller.dart';
 import 'package:max_inventory_scanner/features/package_details/presentation/widgets/image_view.dart';
 import 'package:max_inventory_scanner/core/widgets/custom_scanner.dart';
 import 'package:max_inventory_scanner/core/widgets/tracking_number_entry_modal.dart';
 import 'package:max_inventory_scanner/features/consolidation/presentation/pages/barcode_detected_bottom_sheet.dart';
 import 'package:max_inventory_scanner/features/consolidation/presentation/pages/package_measurement.dart';
+import 'package:max_inventory_scanner/routes/routes.dart';
 
 class ConsolidationProcessController extends GetxController {
+  final SharedPreferencesService _myServices =
+      Get.find<SharedPreferencesService>();
+  final ClientService clientService;
   final ConsolidationRepository _consolidationRepository;
   final ImageService imageService;
   final DialogService dialogService;
-
   ConsolidationProcessController(this._consolidationRepository)
       : dialogService = DialogService(),
+        clientService = ClientService(),
         imageService = ImageService();
 
-  String? barcodeResult;
+  final TextEditingController clientNameController = TextEditingController();
+  final RxBool isWarningVisible = false.obs;
+  final RxBool isTextFieldFocused = false.obs;
+  final RxBool showSuggestions = true.obs;
+  final RxList<String> clientSuggestions = <String>[].obs;
+  final RxBool isClientNameValid = true.obs;
+  final RxString clientNameError = ''.obs;
+  final RxBool isNameInClientList = true.obs;
+  final RxString nameNotInListWarning = ''.obs;
+
+  final RxString barcodeResult = ''.obs;
+  final RxBool isNewBox = false.obs;
+  final RxString location = ''.obs;
+
   RxList<String> detectedBarcodes = <String>[].obs;
   final TextEditingController trackingNumberController =
       TextEditingController();
@@ -38,10 +59,16 @@ class ConsolidationProcessController extends GetxController {
   final Rx<String?> selectedProblemType = Rx<String?>(null);
   final RxBool showOtherProblemField = false.obs;
   final TextEditingController otherProblemController = TextEditingController();
-
+  final RxString lengthError = ''.obs;
+  final RxString weightError = ''.obs;
+  final RxString heightError = ''.obs;
   @override
   void onInit() {
-    barcodeResult = Get.arguments['barcodeResult'];
+    clientService.loadClients();
+    barcodeResult.value = Get.arguments['barcodeResult'];
+    isNewBox.value = Get.arguments['isNewBox'];
+    location.value = _myServices.getLocation() ?? '';
+    clientNameController.addListener(onClientNameChanged);
     super.onInit();
   }
 
@@ -52,7 +79,116 @@ class ConsolidationProcessController extends GetxController {
     weightController.dispose();
     heightController.dispose();
     otherProblemController.dispose();
+    clientNameController.removeListener(onClientNameChanged);
+    clientNameController.dispose();
+    clearMeasurementErrors();
     super.onClose();
+  }
+
+  Future<void> saveAndNext(BuildContext context) async {
+    if (validateMeasurements()) {
+      await EasyLoading.show(status: 'Processing...', dismissOnTap: false);
+      await Future.delayed(const Duration(seconds: 2));
+      await EasyLoading.dismiss();
+
+      Get.until((route) => Get.currentRoute == AppRoute.CONSOLIDATION);
+
+      Future.delayed(const Duration(milliseconds: 100), () {
+        final consolidationController = Get.find<ConsolidationController>();
+        consolidationController.showConsolidationScanner(context,
+            isNewBox: isNewBox.value);
+      });
+    }
+  }
+
+  void clearMeasurementErrors() {
+    lengthError.value = '';
+    weightError.value = '';
+    heightError.value = '';
+    update();
+  }
+
+  bool validateMeasurements() {
+    bool isValid = true;
+
+    if (lengthController.text.trim().isEmpty) {
+      lengthError.value = 'Length is required';
+      isValid = false;
+    } else {
+      lengthError.value = '';
+    }
+
+    if (weightController.text.trim().isEmpty) {
+      weightError.value = 'Weight is required';
+      isValid = false;
+    } else {
+      weightError.value = '';
+    }
+
+    if (heightController.text.trim().isEmpty) {
+      heightError.value = 'Height is required';
+      isValid = false;
+    } else {
+      heightError.value = '';
+    }
+
+    update();
+    return isValid;
+  }
+
+  void onClientNameChanged() {
+    final query = clientNameController.text.trim();
+    clientSuggestions.value =
+        query.isEmpty ? [] : clientService.getSuggestions(query);
+    showSuggestions.value =
+        isTextFieldFocused.value && clientSuggestions.isNotEmpty;
+
+    isNameInClientList.value = clientService.isExactMatch(query);
+    if (!isNameInClientList.value && query.isNotEmpty) {
+      nameNotInListWarning.value =
+          'Name not in client list. Verify or continue if it\'s a new client.';
+      isWarningVisible.value = false;
+    } else {
+      nameNotInListWarning.value = '';
+      isWarningVisible.value = false;
+    }
+
+    validateClientName();
+  }
+
+  bool validateClientName() {
+    final name = clientNameController.text.trim();
+    isClientNameValid.value = name.isNotEmpty;
+    clientNameError.value =
+        isClientNameValid.value ? '' : 'Client name is required';
+
+    if (name.isNotEmpty && !clientService.isExactMatch(name)) {
+      nameNotInListWarning.value =
+          'Name not in client list. Verify or continue if it\'s a new client.';
+      isWarningVisible.value = true;
+    } else {
+      nameNotInListWarning.value = '';
+      isWarningVisible.value = false;
+    }
+
+    update();
+    return isClientNameValid.value;
+  }
+
+  void onClientNameFocusChanged(bool hasFocus) {
+    isTextFieldFocused.value = hasFocus;
+    if (!hasFocus) {
+      validateClientName();
+    }
+    update();
+  }
+
+  void selectClientName(String name) {
+    clientNameController.text = name;
+    showSuggestions.value = false;
+    isTextFieldFocused.value = false;
+    validateClientName();
+    update();
   }
 
   void clearPhoto() {
@@ -76,7 +212,7 @@ class ConsolidationProcessController extends GetxController {
   }
 
   bool checkBarcodeExists(String barcode) {
-    if (barcode == barcodeResult) {
+    if (barcode == barcodeResult.value) {
       _showInvalidTrackingNumberError();
       return true;
     }
@@ -114,10 +250,16 @@ class ConsolidationProcessController extends GetxController {
   }
 
   Future<void> completeMeasurement() async {
-    // Implement the logic for completing the measurement
+    await EasyLoading.show(status: 'Processing...');
+    await Future.delayed(const Duration(seconds: 2));
+    await EasyLoading.dismiss();
   }
 
   void showMeasurementBottomSheet(BuildContext context) {
+    if (isNewBox.value && !validateClientName()) {
+      return;
+    }
+    clearMeasurementErrors();
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -125,15 +267,12 @@ class ConsolidationProcessController extends GetxController {
       builder: (BuildContext context) {
         return MeasurementBottomSheet(
           controller: this,
-          onSaveAndNext: () {
-            completeMeasurement();
-            Navigator.of(context).pop();
-            // Logic to start next consolidation
-          },
-          onSaveAndExit: () {
-            completeMeasurement();
-            Navigator.of(context).pop();
-            Get.back(); // Exit the consolidation process
+          onSaveAndExit: () async {
+            if (validateMeasurements()) {
+              await completeMeasurement();
+              Navigator.of(context).pop();
+              Get.back();
+            }
           },
         );
       },
@@ -299,6 +438,7 @@ class ConsolidationProcessController extends GetxController {
         onAdd: (val) {
           Navigator.of(context).pop();
           if (!checkBarcodeExists(val)) {
+            trackingNumberController.clear();
             showBarcodeDetectedBottomSheet(
                 context, PackageInfo(trackingNumber: val), null);
           }

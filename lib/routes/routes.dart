@@ -1,7 +1,9 @@
 import 'package:get/get.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:max_inventory_scanner/features/consolidation/data/repository/consolidation_repository.dart';
+import 'package:max_inventory_scanner/features/consolidation/presentation/controller/consolidation_controller.dart';
 import 'package:max_inventory_scanner/features/consolidation/presentation/controller/consolidation_process_controller.dart';
+import 'package:max_inventory_scanner/features/consolidation/presentation/pages/consolidation.dart';
 import 'package:max_inventory_scanner/features/consolidation/presentation/pages/consolidation_process.dart';
 import 'package:max_inventory_scanner/features/home/controller/home_controller.dart';
 import 'package:max_inventory_scanner/features/home/presentation/pages/home.dart';
@@ -33,6 +35,13 @@ class AppPages {
     ),
     GetPage(
       name: AppRoute.CONSOLIDATION,
+      page: () => const ConsolidationPage(),
+      binding: BindingsBuilder(() {
+        Get.lazyPut<ConsolidationController>(() => ConsolidationController());
+      }),
+    ),
+    GetPage(
+      name: AppRoute.CONSOLIDATION_PROCCESS,
       page: () => const ConsolidationProcess(),
       binding: BindingsBuilder(() {
         Get.lazyPut<ConsolidationRepository>(
@@ -48,9 +57,10 @@ class AppPages {
       name: AppRoute.SETTINGS,
       page: () => const RegistrationPage(),
       binding: BindingsBuilder(() {
-          Get.lazyPut<UserRepository>(
+        Get.lazyPut<UserRepository>(
             () => UserRepositoryImpl(Get.find<FirebaseFirestore>()));
-        Get.lazyPut<RegistrationController>(() => RegistrationController(Get.find<UserRepository>()));
+        Get.lazyPut<RegistrationController>(
+            () => RegistrationController(Get.find<UserRepository>()));
       }),
     ),
   ];
@@ -58,7 +68,8 @@ class AppPages {
 
 abstract class AppRoute {
   static const HOME = '/';
+  static const CONSOLIDATION = '/CONSOLIDATION';
   static const PACKAGE_DETAILS = '/package-details';
-  static const CONSOLIDATION = '/consolidation';
+  static const CONSOLIDATION_PROCCESS = '/CONSOLIDATION_PROCCESS';
   static const SETTINGS = '/settings';
 }
