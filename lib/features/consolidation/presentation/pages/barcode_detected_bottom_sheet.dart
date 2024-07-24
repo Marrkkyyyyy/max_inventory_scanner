@@ -27,6 +27,7 @@ class BarcodeDetectedBottomSheet extends StatelessWidget {
   final Rx<String?> selectedProblemType;
   final RxBool showOtherProblemField;
   final TextEditingController otherProblemController;
+  final VoidCallback onCancel;
 
   const BarcodeDetectedBottomSheet({
     super.key,
@@ -47,6 +48,7 @@ class BarcodeDetectedBottomSheet extends StatelessWidget {
     required this.selectedProblemType,
     required this.showOtherProblemField,
     required this.otherProblemController,
+    required this.onCancel,
   });
 
   @override
@@ -114,36 +116,48 @@ class BarcodeDetectedBottomSheet extends StatelessWidget {
   }
 
   Widget _buildActionButtons() {
-    if (isEditing) {
-      return ActionButton(
-        onPressed: onUpdate!,
-        text: 'Update',
-        icon: Icons.update,
-        isPrimary: true,
-      );
-    } else {
-      return Row(
-        children: [
-          Expanded(
-            child: ActionButton(
-              onPressed: onSaveAndExit,
-              text: 'Save & Exit',
-              icon: Icons.check_circle_outline,
-              isPrimary: false,
-              hasBorder: true,
-            ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (isEditing)
+          ActionButton(
+            onPressed: onUpdate!,
+            text: 'Update',
+            icon: Icons.update,
+            isPrimary: true,
+          )
+        else
+          Row(
+            children: [
+              Expanded(
+                child: ActionButton(
+                  onPressed: onSaveAndExit,
+                  text: 'Save & Exit',
+                  icon: Icons.check_circle_outline,
+                  isPrimary: true,
+                  hasBorder: true,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: ActionButton(
+                  onPressed: onSaveAndNext,
+                  text: 'Save & Next',
+                  icon: Icons.save_alt_rounded,
+                  isPrimary: true,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: ActionButton(
-              onPressed: onSaveAndNext,
-              text: 'Save & Next',
-              icon: Icons.save_alt_rounded,
-              isPrimary: true,
-            ),
-          ),
-        ],
-      );
-    }
+        const SizedBox(height: 16),
+        ActionButton(
+          onPressed: onCancel,
+          text: 'Cancel',
+          icon: Icons.cancel_outlined,
+          isPrimary: false,
+          hasBorder: true,
+        ),
+      ],
+    );
   }
 }

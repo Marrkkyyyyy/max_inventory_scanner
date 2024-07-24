@@ -13,6 +13,7 @@ import 'package:max_inventory_scanner/features/package_details/presentation/page
 import 'package:max_inventory_scanner/features/registration/data/repository/registration_repository.dart';
 import 'package:max_inventory_scanner/features/registration/presentation/page/registration_page.dart';
 import 'package:max_inventory_scanner/features/registration/presentation/controller/registration_controller.dart';
+import 'package:max_inventory_scanner/core/services/tracking_number_search_service.dart';
 
 class AppPages {
   static final routes = [
@@ -20,7 +21,10 @@ class AppPages {
       name: AppRoute.HOME,
       page: () => const HomePage(),
       binding: BindingsBuilder(() {
-        Get.lazyPut<HomeController>(() => HomeController());
+        Get.put<TrackingNumberSearchService>(
+            TrackingNumberSearchService(Get.find<FirebaseFirestore>()));
+        Get.lazyPut<HomeController>(
+            () => HomeController(Get.find<TrackingNumberSearchService>()));
       }),
     ),
     GetPage(
@@ -37,18 +41,25 @@ class AppPages {
       name: AppRoute.CONSOLIDATION,
       page: () => const ConsolidationPage(),
       binding: BindingsBuilder(() {
-        Get.lazyPut<ConsolidationController>(() => ConsolidationController());
+        Get.put<TrackingNumberSearchService>(
+            TrackingNumberSearchService(Get.find<FirebaseFirestore>()));
+        Get.lazyPut<ConsolidationController>(() =>
+            ConsolidationController(Get.find<TrackingNumberSearchService>()));
       }),
     ),
     GetPage(
       name: AppRoute.CONSOLIDATION_PROCCESS,
       page: () => const ConsolidationProcess(),
       binding: BindingsBuilder(() {
+        Get.put<TrackingNumberSearchService>(
+            TrackingNumberSearchService(Get.find<FirebaseFirestore>()));
         Get.lazyPut<ConsolidationRepository>(
             () => ConsolidationRepositoryImpl(Get.find<FirebaseFirestore>()));
-        Get.lazyPut<ConsolidationProcessController>(() =>
-            ConsolidationProcessController(
-                Get.find<ConsolidationRepository>()));
+        Get.lazyPut<ConsolidationProcessController>(
+            () => ConsolidationProcessController(
+                  Get.find<ConsolidationRepository>(),
+                  Get.find<TrackingNumberSearchService>(),
+                ));
       }),
       transition: Transition.rightToLeft,
       transitionDuration: const Duration(milliseconds: 200),

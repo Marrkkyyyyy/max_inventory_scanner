@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:max_inventory_scanner/features/consolidation/presentation/widgets/consolidation/option_section.dart';
 
@@ -7,8 +6,8 @@ class ConsolidationOptions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children:  [
+    return const Column(
+      children: [
         OptionSection(
           title: 'Existing Box',
           icon: Icons.inventory_2,

@@ -18,6 +18,7 @@ class ConsolidationProcess extends GetView<ConsolidationProcessController> {
       child: GestureDetector(
         onTap: () {
           FocusScope.of(context).unfocus();
+          FocusManager.instance.primaryFocus!.unfocus();
         },
         child: Scaffold(
           backgroundColor: AppColor.white,
@@ -43,27 +44,18 @@ class ConsolidationProcess extends GetView<ConsolidationProcessController> {
   }
 
   Widget _buildBody(BuildContext context) {
-    return ConstrainedBox(
-      constraints: BoxConstraints(
-        minHeight: MediaQuery.of(context).size.height -
-            AppBar().preferredSize.height -
-            MediaQuery.of(context).padding.top,
-      ),
-      child: IntrinsicHeight(
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              controller.isNewBox.value
-                  ? const ConsolidationClientNameFieldWidget()
-                  : const SizedBox(),
-              const MainPackageInfo(),
-              const SizedBox(height: 12),
-              _buildDetectedBarcodesList(context),
-            ],
-          ),
-        ),
+    return Padding(
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          controller.isNewBox.value
+              ? const ConsolidationClientNameFieldWidget()
+              : const SizedBox(),
+          const MainPackageInfo(),
+          const SizedBox(height: 12),
+          _buildDetectedBarcodesList(context),
+        ],
       ),
     );
   }
@@ -83,7 +75,8 @@ class ConsolidationProcess extends GetView<ConsolidationProcessController> {
 
   Widget _buildCompleteConsolidationButton(BuildContext context) {
     return Obx(() => Container(
-          padding: const EdgeInsets.all(12),
+          padding:
+              const EdgeInsets.only(left: 12, right: 12, bottom: 12, top: 4),
           child: ElevatedButton.icon(
             onPressed: controller.isConsolidating.value
                 ? null

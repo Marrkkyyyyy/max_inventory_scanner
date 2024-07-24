@@ -6,7 +6,7 @@ import 'package:max_inventory_scanner/core/theme/color.dart';
 import 'package:max_inventory_scanner/core/theme/text_styles.dart';
 import 'package:max_inventory_scanner/core/utils/snackbar_service.dart';
 import 'package:max_inventory_scanner/core/widgets/custom_scanner.dart';
-import 'package:max_inventory_scanner/core/widgets/tracking_number_entry_modal.dart';
+import 'package:max_inventory_scanner/core/widgets/manual_tracking_number.dart';
 import 'package:max_inventory_scanner/features/home/controller/home_controller.dart';
 import 'package:max_inventory_scanner/features/home/presentation/widgets/action_button.dart';
 import 'package:max_inventory_scanner/features/home/presentation/widgets/custom_header.dart';
@@ -45,6 +45,16 @@ class HomePage extends GetView<HomeController> {
             systemOverlayStyle: SystemUiOverlayStyle.dark,
             backgroundColor: Colors.transparent,
             elevation: 0,
+            // actions: [
+            //   IconButton(
+            //       onPressed: () {
+            //         Get.toNamed(AppRoute.SETTINGS);
+            //       },
+            //       icon: const Icon(
+            //         Icons.settings,
+            //         color: AppColor.blue,
+            //       ))
+            // ],
           ),
           body: _buildHomePage(context),
         );
@@ -88,15 +98,35 @@ class HomePage extends GetView<HomeController> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       isDismissible: false,
-      builder: (BuildContext context) => TrackingNumberEntryModal(
-        onAdd: (_) async {
-          Get.back();
-          manualEntry(controller.trackingNumberController.text);
-          controller.trackingNumberController.clear();
-          controller.update();
-        },
-        controller: controller.trackingNumberController,
-      ),
+      builder: (BuildContext context) {
+        return controller.location.value == 'Receiving'
+            ? TrackingNumberEntryModal(
+                isLoading: false.obs,
+                onAdd: (_) async {
+                  Get.back();
+                  manualEntry(controller.trackingNumberController.text);
+                  controller.trackingNumberController.clear();
+                  controller.update();
+                },
+                textEditingController: controller.trackingNumberController,
+                trackingSuggestions: [''].obs,
+                showSuggestions: false,
+                onSearch: (val) {},
+              )
+            : TrackingNumberEntryModal(
+                isLoading: controller.isLoadingSearch,
+                onAdd: (_) async {
+                  Get.back();
+                  manualEntry(controller.trackingNumberController.text);
+                  controller.trackingNumberController.clear();
+                  controller.update();
+                },
+                textEditingController: controller.trackingNumberController,
+                trackingSuggestions: controller.trackingSuggestions,
+                showSuggestions: true,
+                onSearch: controller.searchTrackingNumbers,
+              );
+      },
     );
   }
 

@@ -6,6 +6,7 @@ import 'package:max_inventory_scanner/core/theme/text_styles.dart';
 import 'package:max_inventory_scanner/features/consolidation/presentation/controller/consolidation_controller.dart';
 import 'package:max_inventory_scanner/features/consolidation/presentation/widgets/consolidation/consolidation_content.dart';
 import 'package:max_inventory_scanner/features/home/presentation/widgets/custom_header.dart';
+import 'package:max_inventory_scanner/routes/routes.dart';
 
 class ConsolidationPage extends GetView<ConsolidationController> {
   const ConsolidationPage({super.key});
@@ -24,6 +25,16 @@ class ConsolidationPage extends GetView<ConsolidationController> {
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
+        // actions: [
+        //   IconButton(
+        //       onPressed: () {
+        //         Get.toNamed(AppRoute.SETTINGS);
+        //       },
+        //       icon: const Icon(
+        //         Icons.settings,
+        //         color: AppColor.blue,
+        //       ))
+        // ],
       ),
       body: SingleChildScrollView(
         child: Container(

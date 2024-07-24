@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_easyloading/flutter_easyloading.dart';
@@ -7,13 +8,14 @@ import 'package:max_inventory_scanner/core/services/client_service.dart';
 import 'package:max_inventory_scanner/core/services/dialog_service.dart';
 import 'package:max_inventory_scanner/core/services/image_service.dart';
 import 'package:max_inventory_scanner/core/services/shared_preferences_service.dart';
+import 'package:max_inventory_scanner/core/services/tracking_number_search_service.dart';
 import 'package:max_inventory_scanner/core/utils/snackbar_service.dart';
+import 'package:max_inventory_scanner/core/widgets/manual_tracking_number.dart';
 import 'package:max_inventory_scanner/features/consolidation/data/model/package_info_model.dart';
 import 'package:max_inventory_scanner/features/consolidation/data/repository/consolidation_repository.dart';
 import 'package:max_inventory_scanner/features/consolidation/presentation/controller/consolidation_controller.dart';
 import 'package:max_inventory_scanner/features/package_details/presentation/widgets/image_view.dart';
 import 'package:max_inventory_scanner/core/widgets/custom_scanner.dart';
-import 'package:max_inventory_scanner/core/widgets/tracking_number_entry_modal.dart';
 import 'package:max_inventory_scanner/features/consolidation/presentation/pages/barcode_detected_bottom_sheet.dart';
 import 'package:max_inventory_scanner/features/consolidation/presentation/pages/package_measurement.dart';
 import 'package:max_inventory_scanner/routes/routes.dart';
@@ -23,10 +25,25 @@ class ConsolidationProcessController extends GetxController {
       Get.find<SharedPreferencesService>();
   final ClientService clientService;
   final ConsolidationRepository _consolidationRepository;
+
+  final RxList<String> trackingSuggestions = <String>[].obs;
+  final RxBool isLoading = false.obs;
+  final TrackingNumberSearchService _trackingNumberSearchService;
+
+  Future<void> searchTrackingNumbers(String query) async {
+    isLoading.value = true;
+    List<String> results =
+        await _trackingNumberSearchService.searchTrackingNumbers(query);
+    trackingSuggestions.assignAll(results);
+    isLoading.value = false;
+  }
+
   final ImageService imageService;
   final DialogService dialogService;
-  ConsolidationProcessController(this._consolidationRepository)
-      : dialogService = DialogService(),
+  ConsolidationProcessController(
+    this._consolidationRepository,
+    this._trackingNumberSearchService,
+  )   : dialogService = DialogService(),
         clientService = ClientService(),
         imageService = ImageService();
 
@@ -165,7 +182,7 @@ class ConsolidationProcessController extends GetxController {
     if (name.isNotEmpty && !clientService.isExactMatch(name)) {
       nameNotInListWarning.value =
           'Name not in client list. Verify or continue if it\'s a new client.';
-      isWarningVisible.value = true;
+      isWarningVisible.value = !isTextFieldFocused.value;
     } else {
       nameNotInListWarning.value = '';
       isWarningVisible.value = false;
@@ -263,6 +280,7 @@ class ConsolidationProcessController extends GetxController {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      isDismissible: false,
       backgroundColor: Colors.transparent,
       builder: (BuildContext context) {
         return MeasurementBottomSheet(
@@ -276,7 +294,9 @@ class ConsolidationProcessController extends GetxController {
           },
         );
       },
-    );
+    ).then((_) {
+      FocusManager.instance.primaryFocus!.unfocus();
+    });
   }
 
   void showScannerDialog(BuildContext context) {
@@ -313,6 +333,9 @@ class ConsolidationProcessController extends GetxController {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (BuildContext context) => BarcodeDetectedBottomSheet(
+        onCancel: () {
+          Navigator.of(context).pop();
+        },
         packageInfo: packageInfo,
         isEditing: index != null,
         onSaveAndExit: () {
@@ -431,6 +454,7 @@ class ConsolidationProcessController extends GetxController {
 
   void showTrackingNumberEntry(BuildContext context) {
     showModalBottomSheet(
+      isDismissible: false,
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -443,26 +467,34 @@ class ConsolidationProcessController extends GetxController {
                 context, PackageInfo(trackingNumber: val), null);
           }
         },
-        controller: trackingNumberController,
+        textEditingController: trackingNumberController,
+        trackingSuggestions: trackingSuggestions,
+        isLoading: isLoading,
+        onSearch: searchTrackingNumbers,
       ),
     );
   }
 
   void _showInvalidTrackingNumberError() {
+    final currentFocus = FocusManager.instance.primaryFocus;
+
     SnackbarService.showCustomSnackbar(
       title: 'Invalid Tracking Number',
       message:
           'The scanned tracking number is the same as the consolidation tracking number.',
       backgroundColor: Colors.red,
     );
+    currentFocus?.requestFocus();
   }
 
   void _showDuplicateTrackingNumberError() {
+    final currentFocus = FocusManager.instance.primaryFocus;
     SnackbarService.showCustomSnackbar(
       title: 'Duplicate Tracking Number',
       message:
           'This tracking number has already been added to the consolidation.',
       backgroundColor: Colors.red,
     );
+    currentFocus?.requestFocus();
   }
 }

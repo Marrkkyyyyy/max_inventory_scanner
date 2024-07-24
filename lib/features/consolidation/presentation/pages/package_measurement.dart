@@ -20,7 +20,7 @@ class MeasurementBottomSheet extends StatelessWidget {
         bottom: MediaQuery.of(context).viewInsets.bottom + 20,
         left: 20,
         right: 20,
-        top: 20,
+        top: 12,
       ),
       decoration: const BoxDecoration(
         color: Colors.white,
@@ -31,7 +31,7 @@ class MeasurementBottomSheet extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const Icon(Icons.straighten, size: 48, color: AppColor.blue),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           const Text(
             'Enter Package Measurements',
             style: TextStyle(
@@ -58,7 +58,7 @@ class MeasurementBottomSheet extends StatelessWidget {
                   onPressed: () => _onSave(onSaveAndExit),
                   text: 'Save & Exit',
                   icon: Icons.check_circle_outline,
-                  isPrimary: false,
+                  isPrimary: true,
                 ),
               ),
               const SizedBox(width: 16),
@@ -71,6 +71,13 @@ class MeasurementBottomSheet extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: 16),
+          _buildButton(
+            onPressed: () => Navigator.of(context).pop(),
+            text: 'Cancel',
+            icon: Icons.cancel_outlined,
+            isPrimary: false,
           ),
         ],
       ),

@@ -13,12 +13,57 @@ abstract class ConsolidationRepository {
     required double weight,
     required double length,
   });
+ 
 }
 
 class ConsolidationRepositoryImpl implements ConsolidationRepository {
   final FirebaseFirestore _firestore;
 
   ConsolidationRepositoryImpl(this._firestore);
+
+  // @override
+  // Future<List<String>> searchTrackingNumbers(String query) async {
+  //   try {
+  //     if (!await InternetChecker.checkInternet()) {
+  //       return [];
+  //     }
+
+  //     Set<String> uniqueTrackingNumbers = {};
+
+  //     QuerySnapshot rawResult = await _firestore
+  //         .collection('Package')
+  //         .where('rawTrackingNumber', isGreaterThanOrEqualTo: query)
+  //         .where('rawTrackingNumber', isLessThan: '${query}z')
+  //         .limit(10)
+  //         .get();
+
+  //     for (var doc in rawResult.docs) {
+  //       var data = doc.data() as Map<String, dynamic>;
+  //       if (data['rawTrackingNumber'] != null) {
+  //         uniqueTrackingNumbers.add(data['rawTrackingNumber']);
+  //       }
+  //     }
+
+  //     QuerySnapshot trackingResult = await _firestore
+  //         .collection('Package')
+  //         .where('trackingNumber', isGreaterThanOrEqualTo: query)
+  //         .where('trackingNumber', isLessThan: '${query}z')
+  //         .limit(10)
+  //         .get();
+
+  //     for (var doc in trackingResult.docs) {
+  //       var data = doc.data() as Map<String, dynamic>;
+  //       if (data['trackingNumber'] != null) {
+  //         uniqueTrackingNumbers.add(data['trackingNumber']);
+  //       }
+  //     }
+
+
+  //     return uniqueTrackingNumbers.toList();
+  //   } catch (e) {
+  //     return [];
+  //   }
+  // }
 
   @override
   Future<StatusResult> consolidatePackages({

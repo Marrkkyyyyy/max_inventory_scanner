@@ -29,40 +29,41 @@ class ProblemSection extends GetView<PackageDetailsController> {
                       fontWeight: FontWeight.w400,
                     )),
                 const Spacer(),
-                TextButton.icon(
-                  icon: Icon(
-                    controller.isImageCaptured.value
-                        ? Icons.image
-                        : Icons.camera_alt_rounded,
-                    color: AppColor.white,
-                  ),
-                  onPressed: controller.isImageCaptured.value
-                      ? _showImageViewDialog
-                      : () {
-                          FocusScope.of(context).unfocus();
-                          controller.takePhoto();
-                        },
-                  style: TextButton.styleFrom(
-                    backgroundColor: controller.isImageCaptured.value
-                        ? AppColor.teal
-                        : AppColor.blue,
-                    padding:
-                        const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                if (controller.hasProblem.value)
+                  TextButton.icon(
+                    icon: Icon(
+                      controller.isImageCaptured.value
+                          ? Icons.image
+                          : Icons.camera_alt_rounded,
+                      color: AppColor.white,
+                    ),
+                    onPressed: controller.isImageCaptured.value
+                        ? _showImageViewDialog
+                        : () {
+                            FocusScope.of(context).unfocus();
+                            controller.takePhoto();
+                          },
+                    style: TextButton.styleFrom(
+                      backgroundColor: controller.isImageCaptured.value
+                          ? AppColor.teal
+                          : AppColor.blue,
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 8, horizontal: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    label: Text(
+                      controller.isImageCaptured.value
+                          ? "View Photo"
+                          : "Take a Photo",
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
-                  label: Text(
-                    controller.isImageCaptured.value
-                        ? "View Photo"
-                        : "Take a Photo",
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
               ],
             ),
             if (controller.hasProblem.value) ...[

@@ -53,6 +53,7 @@ class PackageDetailsController extends GetxController {
   final RxBool isNameInClientList = true.obs;
   final RxString nameNotInListWarning = ''.obs;
   final RxBool isWarningVisible = false.obs;
+  final RxBool shouldUploadPhoto = false.obs;
 
   // Non-observable properties
   late String barcodeResult;
@@ -110,8 +111,10 @@ class PackageDetailsController extends GetxController {
       showOtherProblemField.value = false;
       otherProblemController.clear();
       isPhotoRequired.value = false;
+      shouldUploadPhoto.value = false;
     } else {
       isPhotoRequired.value = true;
+      shouldUploadPhoto.value = isImageCaptured.value;
     }
     validateClientName();
   }
@@ -266,7 +269,9 @@ class PackageDetailsController extends GetxController {
   }
 
   Future<String?> _uploadPhotoIfCaptured() async {
-    if (isImageCaptured.value && capturedImage.value != null) {
+    if (isImageCaptured.value &&
+        capturedImage.value != null &&
+        shouldUploadPhoto.value) {
       return await imageService.uploadImage(capturedImage.value!);
     }
     return null;
@@ -329,6 +334,7 @@ class PackageDetailsController extends GetxController {
     if (image != null) {
       capturedImage.value = image;
       isImageCaptured.value = true;
+      shouldUploadPhoto.value = hasProblem.value;
       update();
     }
   }

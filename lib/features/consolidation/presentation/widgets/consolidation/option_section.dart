@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:max_inventory_scanner/core/theme/color.dart';
-import 'package:max_inventory_scanner/core/widgets/custom_scanner.dart';
-import 'package:max_inventory_scanner/core/widgets/tracking_number_entry_modal.dart';
 import 'package:max_inventory_scanner/features/consolidation/presentation/controller/consolidation_controller.dart';
 import 'package:max_inventory_scanner/features/consolidation/presentation/widgets/consolidation/action_button.dart';
-import 'package:max_inventory_scanner/routes/routes.dart';
 
-class OptionSection extends StatelessWidget {
+class OptionSection extends GetView<ConsolidationController> {
   final String title;
   final IconData icon;
   final bool isNewBox;
@@ -51,8 +48,8 @@ class OptionSection extends StatelessWidget {
                 child: ActionButton(
                   title: 'Manual Entry',
                   icon: Icons.edit,
-                  onPressed: () =>
-                      showManualEntryDialog(context, isNewBox: isNewBox),
+                  onPressed: () => controller.showManualEntryDialog(context,
+                      isNewBox: isNewBox),
                   isPrimary: false,
                 ),
               ),
@@ -61,8 +58,8 @@ class OptionSection extends StatelessWidget {
                 child: ActionButton(
                   title: 'Scan Barcode',
                   icon: Icons.qr_code_scanner,
-                  onPressed: () =>
-                      showConsolidationScanner(context, isNewBox: isNewBox),
+                  onPressed: () => controller.showConsolidationScanner(context,
+                      isNewBox: isNewBox),
                   isPrimary: true,
                 ),
               ),
@@ -71,42 +68,5 @@ class OptionSection extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  void showConsolidationScanner(BuildContext context,
-      {required bool isNewBox}) {
-    Navigator.of(context).push(MaterialPageRoute(
-      builder: (context) => CustomScanner(
-        onBarcodeDetected: (barcode) {
-          Navigator.of(context).pop();
-          navigateToConsolidation(context,
-              barcode: barcode, isNewBox: isNewBox);
-        },
-      ),
-    ));
-  }
-
-  void showManualEntryDialog(BuildContext context, {required bool isNewBox}) {
-    final controller = Get.find<ConsolidationController>();
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      isDismissible: false,
-      builder: (BuildContext context) => TrackingNumberEntryModal(
-        onAdd: (_) async {},
-        controller: controller.manualTrackingNumberController,
-      ),
-    );
-  }
-
-  void navigateToConsolidation(BuildContext context,
-      {required String barcode, required bool isNewBox}) {
-    final controller = Get.find<ConsolidationController>();
-    Get.toNamed(AppRoute.CONSOLIDATION_PROCCESS, arguments: {
-      "barcodeResult": barcode,
-      "location": controller.location.value,
-      "isNewBox": isNewBox,
-    });
   }
 }

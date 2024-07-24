@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:max_inventory_scanner/features/consolidation/presentation/widgets/consolidation/consolidation_description.dart';
 import 'package:max_inventory_scanner/features/consolidation/presentation/widgets/consolidation/consolidation_header.dart';
@@ -10,9 +9,9 @@ class ConsolidationContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    return const Column(
       crossAxisAlignment: CrossAxisAlignment.center,
-      children:  [
+      children: [
         ConsolidationHeader(),
         SizedBox(height: 12),
         ConsolidationDescription(),
