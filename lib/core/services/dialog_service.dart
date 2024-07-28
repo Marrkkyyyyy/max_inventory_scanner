@@ -15,7 +15,17 @@ class DialogService {
     );
   }
 
-
+  Future<bool?> showPhotoRequiredDialog() async {
+    return _showCustomDialog(
+      icon: Icons.camera_alt,
+      title: 'Photo is Required',
+      content:
+          'Package not found. Please take a photo of the package label to proceed.',
+      confirmText: 'Take Photo',
+      cancelText: 'Close',
+      barrierDismissible: false,
+    );
+  }
 
   Future<bool?> showConsolidationConfirmationDialog(
       bool isSinglePackage) async {

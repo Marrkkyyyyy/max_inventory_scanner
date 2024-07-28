@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:max_inventory_scanner/core/theme/color.dart';
-import 'package:max_inventory_scanner/features/consolidation/presentation/controller/consolidation_process_controller.dart';
+import 'package:max_inventory_scanner/features/consolidation/presentation/controller/client_controller.dart';
 
-class ConsolidationClientNameFieldWidget
-    extends GetView<ConsolidationProcessController> {
+class ConsolidationClientNameFieldWidget extends GetView<ClientController> {
   const ConsolidationClientNameFieldWidget({super.key});
   @override
   Widget build(BuildContext context) {
@@ -25,8 +24,6 @@ class ConsolidationClientNameFieldWidget
                     },
                     child: TextField(
                       controller: controller.clientNameController,
-                      enabled: !(controller.hasProblem.value &&
-                          controller.selectedProblemType.value == 'No Name'),
                       decoration: InputDecoration(
                         fillColor: Colors.white,
                         filled: true,

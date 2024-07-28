@@ -23,8 +23,8 @@ class HomeController extends GetxController {
 
   Future<void> searchTrackingNumbers(String query) async {
     isLoadingSearch.value = true;
-    List<String> results =
-        await _trackingNumberSearchService.searchTrackingNumbers(query);
+    List<String> results = await _trackingNumberSearchService
+        .searchTrackingNumbers(query, location.value);
     trackingSuggestions.assignAll(results);
     isLoadingSearch.value = false;
   }

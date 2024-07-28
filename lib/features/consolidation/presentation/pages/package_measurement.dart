@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:max_inventory_scanner/core/theme/color.dart';
-import 'package:max_inventory_scanner/features/consolidation/presentation/controller/consolidation_process_controller.dart';
+import 'package:max_inventory_scanner/features/consolidation/presentation/controller/measurement_controller.dart';
 
-class MeasurementBottomSheet extends StatelessWidget {
-  final ConsolidationProcessController controller;
+class MeasurementBottomSheet extends GetView<MeasurementController> {
   final VoidCallback onSaveAndExit;
 
   const MeasurementBottomSheet({
     super.key,
-    required this.controller,
     required this.onSaveAndExit,
   });
 

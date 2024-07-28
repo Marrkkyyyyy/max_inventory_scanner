@@ -6,6 +6,7 @@ import 'package:max_inventory_scanner/features/consolidation/presentation/contro
 import 'package:max_inventory_scanner/features/consolidation/presentation/widgets/consolidation_process/client_name_field.dart';
 import 'package:max_inventory_scanner/features/consolidation/presentation/widgets/consolidation_process/detected_barcode_list.dart';
 import 'package:max_inventory_scanner/features/consolidation/presentation/widgets/consolidation_process/main_package_info.dart';
+import 'package:max_inventory_scanner/features/consolidation/presentation/widgets/consolidation_process/warning_message.dart';
 
 class ConsolidationProcess extends GetView<ConsolidationProcessController> {
   const ConsolidationProcess({super.key});
@@ -16,10 +17,7 @@ class ConsolidationProcess extends GetView<ConsolidationProcessController> {
       canPop: false,
       onPopInvoked: (didPop) => _handlePopScope(context, didPop),
       child: GestureDetector(
-        onTap: () {
-          FocusScope.of(context).unfocus();
-          FocusManager.instance.primaryFocus!.unfocus();
-        },
+        onTap: () => _unfocusKeyboard(context),
         child: Scaffold(
           backgroundColor: AppColor.white,
           appBar: _buildAppBar(context),
@@ -30,6 +28,7 @@ class ConsolidationProcess extends GetView<ConsolidationProcessController> {
     );
   }
 
+  // AppBar
   PreferredSizeWidget _buildAppBar(BuildContext context) {
     return AppBar(
       leading: IconButton(
@@ -43,21 +42,36 @@ class ConsolidationProcess extends GetView<ConsolidationProcessController> {
     );
   }
 
+  // Body
   Widget _buildBody(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          controller.isNewBox.value
-              ? const ConsolidationClientNameFieldWidget()
-              : const SizedBox(),
+          _buildWarningMessage(),
+          controller.buildPhotoButton(context),
+          _buildClientNameField(),
           const MainPackageInfo(),
           const SizedBox(height: 12),
           _buildDetectedBarcodesList(context),
         ],
       ),
     );
+  }
+
+  Widget _buildWarningMessage() {
+    return Obx(() => WarningMessage(
+          isNewBox: controller.isNewBox.value,
+          packageExists: controller.packageExists.value,
+        ));
+  }
+
+
+  Widget _buildClientNameField() {
+    return Obx(() => controller.isNewBox.value
+        ? const ConsolidationClientNameFieldWidget()
+        : const SizedBox());
   }
 
   Widget _buildDetectedBarcodesList(BuildContext context) {
@@ -73,25 +87,30 @@ class ConsolidationProcess extends GetView<ConsolidationProcessController> {
     );
   }
 
+  // Bottom Button
   Widget _buildCompleteConsolidationButton(BuildContext context) {
-    return Obx(() => Container(
-          padding:
-              const EdgeInsets.only(left: 12, right: 12, bottom: 12, top: 4),
-          child: ElevatedButton.icon(
-            onPressed: controller.isConsolidating.value
-                ? null
-                : () => controller.showMeasurementBottomSheet(context),
-            icon: const Icon(Icons.check_circle_outline, size: 24),
-            label: const Text("Complete Consolidation"),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColor.blue,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-            ),
-          ),
-        ));
+    return Container(
+      padding: const EdgeInsets.only(left: 12, right: 12, bottom: 12, top: 4),
+      child: ElevatedButton.icon(
+        onPressed: () => controller.measurementController
+            .showMeasurementBottomSheet(context),
+        icon: const Icon(Icons.check_circle_outline, size: 24),
+        label: const Text("Complete Consolidation"),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColor.blue,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      ),
+    );
+  }
+
+  // Helper Methods
+  void _unfocusKeyboard(BuildContext context) {
+    FocusScope.of(context).unfocus();
+    FocusManager.instance.primaryFocus!.unfocus();
   }
 
   Future<void> _handlePopScope(BuildContext context, bool didPop) async {

@@ -12,7 +12,8 @@ abstract class PackageRepository {
       {String? photoUrl, bool isDamaged, String? problemType});
   Future<StatusResult> savePackageRoatan(PackageModel package, String userID,
       {String? photoUrl, bool isDamaged, String? problemType});
-  Future<PackageCheckResult> checkPackageExists(String trackingNumber);
+  Future<PackageCheckResult> checkPackageExists(
+      String trackingNumber, String location);
 }
 
 class PackageRepositoryImpl implements PackageRepository {
@@ -167,7 +168,8 @@ class PackageRepositoryImpl implements PackageRepository {
   }
 
   @override
-  Future<PackageCheckResult> checkPackageExists(String trackingNumber) async {
+  Future<PackageCheckResult> checkPackageExists(
+      String trackingNumber, String location) async {
     try {
       if (!await InternetChecker.checkInternet()) {
         return PackageCheckResult(StatusResult.noInternet);
@@ -187,11 +189,13 @@ class PackageRepositoryImpl implements PackageRepository {
                 PackageModel.fromJson(doc.data() as Map<String, dynamic>))
             .toList();
 
-        bool hasDuplicates = packages
-            .any((package) => package.status?.toLowerCase() != 'pending');
+        List<PackageModel> sameStatusPackages = packages.where((package) {
+          String packageStatus = package.status?.toLowerCase() ?? '';
+          return packageStatus == location.toLowerCase();
+        }).toList();
 
-        if (hasDuplicates) {
-          PackageModel latestPackage = packages.reduce(
+        if (sameStatusPackages.isNotEmpty) {
+          PackageModel latestPackage = sameStatusPackages.reduce(
               (a, b) => a.timestamp!.compareTo(b.timestamp!) > 0 ? a : b);
 
           return PackageCheckResult(

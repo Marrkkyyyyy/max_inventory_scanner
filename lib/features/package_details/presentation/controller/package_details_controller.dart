@@ -156,7 +156,7 @@ class PackageDetailsController extends GetxController {
     try {
       String internalTrackingNumber = _getInternalTrackingNumber();
       PackageCheckResult result =
-          await repository.checkPackageExists(internalTrackingNumber);
+          await repository.checkPackageExists(internalTrackingNumber, location);
       _updatePackageStatus(result);
       return result;
     } catch (e) {
@@ -217,7 +217,8 @@ class PackageDetailsController extends GetxController {
         !isImageCaptured.value &&
         (selectedProblemType.value == null ||
             selectedProblemType.value == 'No Problem Type Selected')) {
-      bool? shouldTakePhoto = await dialogService.showPhotoConfirmationDialog();
+      bool? shouldTakePhoto =
+          await dialogService.showPhotoConfirmationDialog();
       if (shouldTakePhoto == null) {
         return;
       }

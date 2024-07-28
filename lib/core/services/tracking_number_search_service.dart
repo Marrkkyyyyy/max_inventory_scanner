@@ -6,7 +6,8 @@ class TrackingNumberSearchService {
 
   TrackingNumberSearchService(this._firestore);
 
-  Future<List<String>> searchTrackingNumbers(String query) async {
+  Future<List<String>> searchTrackingNumbers(
+      String query, String currentLocation) async {
     try {
       if (!await InternetChecker.checkInternet()) {
         return [];
@@ -14,31 +15,56 @@ class TrackingNumberSearchService {
 
       Set<String> uniqueTrackingNumbers = {};
 
-      QuerySnapshot rawResult = await _firestore
-          .collection('Package')
-          .where('rawTrackingNumber', isGreaterThanOrEqualTo: query)
-          .where('rawTrackingNumber', isLessThan: '${query}z')
-          .limit(10)
+      Query baseQuery = _firestore.collection('Package');
+
+      String lowercaseQuery = query.toLowerCase();
+
+      QuerySnapshot querySnapshot = await baseQuery
+          .where('rawTrackingNumber', isGreaterThanOrEqualTo: lowercaseQuery)
+          .where('rawTrackingNumber', isLessThan: '${lowercaseQuery}z')
+          .limit(20)
           .get();
 
-      for (var doc in rawResult.docs) {
+      for (var doc in querySnapshot.docs) {
         var data = doc.data() as Map<String, dynamic>;
+        if (currentLocation == 'Consolidation') {
+          String status = (data['status'] as String?)?.toLowerCase() ?? '';
+          if (status != 'receiving' && status != 'consolidated') {
+            continue;
+          }
+        }
+
         if (data['rawTrackingNumber'] != null) {
-          uniqueTrackingNumbers.add(data['rawTrackingNumber']);
+          uniqueTrackingNumbers
+              .add(data['rawTrackingNumber'].toString().toLowerCase());
+        }
+        if (data['trackingNumber'] != null) {
+          uniqueTrackingNumbers
+              .add(data['trackingNumber'].toString().toLowerCase());
         }
       }
 
-      QuerySnapshot trackingResult = await _firestore
-          .collection('Package')
-          .where('trackingNumber', isGreaterThanOrEqualTo: query)
-          .where('trackingNumber', isLessThan: '${query}z')
-          .limit(10)
-          .get();
+      if (uniqueTrackingNumbers.length < 10) {
+        QuerySnapshot trackingSnapshot = await baseQuery
+            .where('trackingNumber', isGreaterThanOrEqualTo: lowercaseQuery)
+            .where('trackingNumber', isLessThan: '${lowercaseQuery}z')
+            .limit(20 - uniqueTrackingNumbers.length)
+            .get();
 
-      for (var doc in trackingResult.docs) {
-        var data = doc.data() as Map<String, dynamic>;
-        if (data['trackingNumber'] != null) {
-          uniqueTrackingNumbers.add(data['trackingNumber']);
+        for (var doc in trackingSnapshot.docs) {
+          var data = doc.data() as Map<String, dynamic>;
+
+          if (currentLocation == 'Consolidation') {
+            String status = (data['status'] as String?)?.toLowerCase() ?? '';
+            if (status != 'receiving' && status != 'consolidated') {
+              continue;
+            }
+          }
+
+          if (data['trackingNumber'] != null) {
+            uniqueTrackingNumbers
+                .add(data['trackingNumber'].toString().toLowerCase());
+          }
         }
       }
 

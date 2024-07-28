@@ -4,7 +4,7 @@ import 'package:get/get.dart';
 import '../theme/color.dart';
 
 class TrackingNumberEntryModal extends StatelessWidget {
-  final Function(String) onAdd;
+  final Function(String, {bool? isSuggestionSelected}) onAdd;
   final TextEditingController textEditingController;
   final RxList<String> trackingSuggestions;
   final RxBool isLoading;
@@ -23,6 +23,7 @@ class TrackingNumberEntryModal extends StatelessWidget {
 
   final RxBool showError = false.obs;
   final RxBool _showSuggestionsLocal = false.obs;
+  final RxBool _suggestionSelected = false.obs;
 
   @override
   Widget build(BuildContext context) {
@@ -248,7 +249,9 @@ class TrackingNumberEntryModal extends StatelessWidget {
     textEditingController.text = option;
     trackingSuggestions.clear();
     _showSuggestionsLocal.value = false;
+    _suggestionSelected.value = true;
     _dismissKeyboardAndSuggestions(context);
+    onAdd(option, isSuggestionSelected: true);
   }
 
   void _handleAddPackage(BuildContext context) {
@@ -256,7 +259,8 @@ class TrackingNumberEntryModal extends StatelessWidget {
     if (barcode.isNotEmpty) {
       showError.value = false;
       _dismissKeyboardAndSuggestions(context);
-      onAdd(barcode);
+      onAdd(barcode, isSuggestionSelected: _suggestionSelected.value);
+      _suggestionSelected.value = false;
     } else {
       showError.value = true;
     }

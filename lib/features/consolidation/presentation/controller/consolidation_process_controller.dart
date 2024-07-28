@@ -4,228 +4,127 @@ import 'dart:io';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
-import 'package:max_inventory_scanner/core/services/client_service.dart';
-import 'package:max_inventory_scanner/core/services/dialog_service.dart';
 import 'package:max_inventory_scanner/core/services/image_service.dart';
 import 'package:max_inventory_scanner/core/services/shared_preferences_service.dart';
 import 'package:max_inventory_scanner/core/services/tracking_number_search_service.dart';
+import 'package:max_inventory_scanner/core/theme/color.dart';
 import 'package:max_inventory_scanner/core/utils/snackbar_service.dart';
 import 'package:max_inventory_scanner/core/widgets/manual_tracking_number.dart';
 import 'package:max_inventory_scanner/features/consolidation/data/model/package_info_model.dart';
+import 'package:max_inventory_scanner/features/consolidation/presentation/controller/measurement_controller.dart';
+import 'package:max_inventory_scanner/features/consolidation/presentation/controller/package_photo_controller.dart';
+import 'package:max_inventory_scanner/features/package_photo_info.dart/data/model/package_photo_info_model.dart';
 import 'package:max_inventory_scanner/features/consolidation/data/repository/consolidation_repository.dart';
-import 'package:max_inventory_scanner/features/consolidation/presentation/controller/consolidation_controller.dart';
+import 'package:max_inventory_scanner/features/package_photo_info.dart/data/repository/package_photo_repository.dart';
+import 'package:max_inventory_scanner/features/package_photo_info.dart/presentation/controller/bottom_sheet_controller.dart';
 import 'package:max_inventory_scanner/features/package_details/presentation/widgets/image_view.dart';
 import 'package:max_inventory_scanner/core/widgets/custom_scanner.dart';
 import 'package:max_inventory_scanner/features/consolidation/presentation/pages/barcode_detected_bottom_sheet.dart';
-import 'package:max_inventory_scanner/features/consolidation/presentation/pages/package_measurement.dart';
-import 'package:max_inventory_scanner/routes/routes.dart';
 
 class ConsolidationProcessController extends GetxController {
   final SharedPreferencesService _myServices =
       Get.find<SharedPreferencesService>();
-  final ClientService clientService;
   final ConsolidationRepository _consolidationRepository;
+  final PackagePhotoRepository _packagePhotoRepository;
+
+  final TrackingNumberSearchService _trackingNumberSearchService;
+  late final MeasurementController measurementController;
+  late final PackagePhotoController packagePhotoController;
 
   final RxList<String> trackingSuggestions = <String>[].obs;
   final RxBool isLoading = false.obs;
-  final TrackingNumberSearchService _trackingNumberSearchService;
+  final RxBool packageExists = true.obs;
 
   Future<void> searchTrackingNumbers(String query) async {
     isLoading.value = true;
-    List<String> results =
-        await _trackingNumberSearchService.searchTrackingNumbers(query);
+    List<String> results = await _trackingNumberSearchService
+        .searchTrackingNumbers(query, location.value);
     trackingSuggestions.assignAll(results);
     isLoading.value = false;
   }
 
   final ImageService imageService;
-  final DialogService dialogService;
-  ConsolidationProcessController(
-    this._consolidationRepository,
-    this._trackingNumberSearchService,
-  )   : dialogService = DialogService(),
-        clientService = ClientService(),
-        imageService = ImageService();
-
-  final TextEditingController clientNameController = TextEditingController();
-  final RxBool isWarningVisible = false.obs;
-  final RxBool isTextFieldFocused = false.obs;
-  final RxBool showSuggestions = true.obs;
-  final RxList<String> clientSuggestions = <String>[].obs;
-  final RxBool isClientNameValid = true.obs;
-  final RxString clientNameError = ''.obs;
-  final RxBool isNameInClientList = true.obs;
-  final RxString nameNotInListWarning = ''.obs;
+  ConsolidationProcessController(this._consolidationRepository,
+      this._trackingNumberSearchService, this._packagePhotoRepository)
+      : imageService = ImageService();
 
   final RxString barcodeResult = ''.obs;
   final RxBool isNewBox = false.obs;
   final RxString location = ''.obs;
 
+  // **********************************
+
+  final Rx<File?> capturedImage = Rx<File?>(null);
+  final RxBool isImageCaptured = false.obs;
+
+  Future<void> takePhoto() async {
+    final File? image = await imageService.takePhoto();
+    if (image != null) {
+      capturedImage.value = image;
+      isImageCaptured.value = true;
+      update();
+    }
+  }
+
+  Widget buildPhotoButton(BuildContext context) {
+    return Obx(() {
+      if (!isNewBox.value && !packageExists.value) {
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          child: ElevatedButton.icon(
+              onPressed: isImageCaptured.value
+                  ? () => _showImageViewDialog(
+                      context, capturedImage.value!, takePhoto)
+                  : takePhoto,
+              icon: Icon(
+                isImageCaptured.value ? Icons.photo : Icons.camera_alt,
+                color: AppColor.white,
+              ),
+              label: Text(
+                isImageCaptured.value ? "View Photo" : "Take a Photo",
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600),
+              ),
+              style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  backgroundColor:
+                      isImageCaptured.value ? AppColor.teal : AppColor.blue,
+                  side: isImageCaptured.value
+                      ? BorderSide(color: AppColor.teal)
+                      : null,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8)))),
+        );
+      } else {
+        return const SizedBox();
+      }
+    });
+  }
+
+// ********************************
   RxList<String> detectedBarcodes = <String>[].obs;
   final TextEditingController trackingNumberController =
       TextEditingController();
-  RxBool isConsolidating = false.obs;
 
-  final TextEditingController lengthController = TextEditingController();
-  final TextEditingController weightController = TextEditingController();
-  final TextEditingController heightController = TextEditingController();
   RxList<PackageInfo> detectedPackages = <PackageInfo>[].obs;
-  final RxBool isImageCaptured = false.obs;
-  final Rx<File?> capturedImage = Rx<File?>(null);
-  final RxBool hasProblem = false.obs;
-  final Rx<String?> selectedProblemType = Rx<String?>(null);
-  final RxBool showOtherProblemField = false.obs;
-  final TextEditingController otherProblemController = TextEditingController();
-  final RxString lengthError = ''.obs;
-  final RxString weightError = ''.obs;
-  final RxString heightError = ''.obs;
   @override
   void onInit() {
-    clientService.loadClients();
+    measurementController = Get.put(MeasurementController(this));
+    packagePhotoController = Get.find<PackagePhotoController>();
     barcodeResult.value = Get.arguments['barcodeResult'];
     isNewBox.value = Get.arguments['isNewBox'];
+    packageExists.value = Get.arguments['packageExists'];
+
     location.value = _myServices.getLocation() ?? '';
-    clientNameController.addListener(onClientNameChanged);
     super.onInit();
   }
 
   @override
   void onClose() {
     trackingNumberController.dispose();
-    lengthController.dispose();
-    weightController.dispose();
-    heightController.dispose();
-    otherProblemController.dispose();
-    clientNameController.removeListener(onClientNameChanged);
-    clientNameController.dispose();
-    clearMeasurementErrors();
     super.onClose();
-  }
-
-  Future<void> saveAndNext(BuildContext context) async {
-    if (validateMeasurements()) {
-      await EasyLoading.show(status: 'Processing...', dismissOnTap: false);
-      await Future.delayed(const Duration(seconds: 2));
-      await EasyLoading.dismiss();
-
-      Get.until((route) => Get.currentRoute == AppRoute.CONSOLIDATION);
-
-      Future.delayed(const Duration(milliseconds: 100), () {
-        final consolidationController = Get.find<ConsolidationController>();
-        consolidationController.showConsolidationScanner(context,
-            isNewBox: isNewBox.value);
-      });
-    }
-  }
-
-  void clearMeasurementErrors() {
-    lengthError.value = '';
-    weightError.value = '';
-    heightError.value = '';
-    update();
-  }
-
-  bool validateMeasurements() {
-    bool isValid = true;
-
-    if (lengthController.text.trim().isEmpty) {
-      lengthError.value = 'Length is required';
-      isValid = false;
-    } else {
-      lengthError.value = '';
-    }
-
-    if (weightController.text.trim().isEmpty) {
-      weightError.value = 'Weight is required';
-      isValid = false;
-    } else {
-      weightError.value = '';
-    }
-
-    if (heightController.text.trim().isEmpty) {
-      heightError.value = 'Height is required';
-      isValid = false;
-    } else {
-      heightError.value = '';
-    }
-
-    update();
-    return isValid;
-  }
-
-  void onClientNameChanged() {
-    final query = clientNameController.text.trim();
-    clientSuggestions.value =
-        query.isEmpty ? [] : clientService.getSuggestions(query);
-    showSuggestions.value =
-        isTextFieldFocused.value && clientSuggestions.isNotEmpty;
-
-    isNameInClientList.value = clientService.isExactMatch(query);
-    if (!isNameInClientList.value && query.isNotEmpty) {
-      nameNotInListWarning.value =
-          'Name not in client list. Verify or continue if it\'s a new client.';
-      isWarningVisible.value = false;
-    } else {
-      nameNotInListWarning.value = '';
-      isWarningVisible.value = false;
-    }
-
-    validateClientName();
-  }
-
-  bool validateClientName() {
-    final name = clientNameController.text.trim();
-    isClientNameValid.value = name.isNotEmpty;
-    clientNameError.value =
-        isClientNameValid.value ? '' : 'Client name is required';
-
-    if (name.isNotEmpty && !clientService.isExactMatch(name)) {
-      nameNotInListWarning.value =
-          'Name not in client list. Verify or continue if it\'s a new client.';
-      isWarningVisible.value = !isTextFieldFocused.value;
-    } else {
-      nameNotInListWarning.value = '';
-      isWarningVisible.value = false;
-    }
-
-    update();
-    return isClientNameValid.value;
-  }
-
-  void onClientNameFocusChanged(bool hasFocus) {
-    isTextFieldFocused.value = hasFocus;
-    if (!hasFocus) {
-      validateClientName();
-    }
-    update();
-  }
-
-  void selectClientName(String name) {
-    clientNameController.text = name;
-    showSuggestions.value = false;
-    isTextFieldFocused.value = false;
-    validateClientName();
-    update();
-  }
-
-  void clearPhoto() {
-    capturedImage.value = null;
-    isImageCaptured.value = false;
-    selectedProblemType.value = null;
-    showOtherProblemField.value = false;
-    otherProblemController.clear();
-    update();
-  }
-
-  Future<void> takePhoto() async {
-    File? image = await imageService.takePhoto();
-    if (image != null) {
-      capturedImage.value = image;
-      isImageCaptured.value = true;
-    } else {
-      isImageCaptured.value = false;
-    }
-    update();
   }
 
   bool checkBarcodeExists(String barcode) {
@@ -272,32 +171,6 @@ class ConsolidationProcessController extends GetxController {
     await EasyLoading.dismiss();
   }
 
-  void showMeasurementBottomSheet(BuildContext context) {
-    if (isNewBox.value && !validateClientName()) {
-      return;
-    }
-    clearMeasurementErrors();
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      isDismissible: false,
-      backgroundColor: Colors.transparent,
-      builder: (BuildContext context) {
-        return MeasurementBottomSheet(
-          controller: this,
-          onSaveAndExit: () async {
-            if (validateMeasurements()) {
-              await completeMeasurement();
-              Navigator.of(context).pop();
-              Get.back();
-            }
-          },
-        );
-      },
-    ).then((_) {
-      FocusManager.instance.primaryFocus!.unfocus();
-    });
-  }
 
   void showScannerDialog(BuildContext context) {
     showDialog(
@@ -307,138 +180,144 @@ class ConsolidationProcessController extends GetxController {
           Navigator.of(context).pop();
           if (!checkBarcodeExists(barcode)) {
             showBarcodeDetectedBottomSheet(
-                context, PackageInfo(trackingNumber: barcode), null);
+                context, PackageInfo(trackingNumber: barcode), null, false);
           }
         },
       ),
     );
   }
 
+  Future<List<PackagePhotoInfo>> fetchPhotoInfoForPackage(
+      String trackingNumber) async {
+    try {
+      final package = await _packagePhotoRepository
+          .getPackageByTrackingNumber(trackingNumber);
+
+      if (package == null) {
+        return [];
+      }
+
+      return await _packagePhotoRepository
+          .getPhotoInfoForPackage(package.packageID!);
+    } catch (e) {
+      return [];
+    }
+  }
+
   void showBarcodeDetectedBottomSheet(
-      BuildContext context, PackageInfo packageInfo, int? index) {
-    // Create local Rx variables to manage state within the bottom sheet
-    final RxBool localIsImageCaptured = (packageInfo.image != null).obs;
-    final Rx<File?> localCapturedImage = Rx<File?>(packageInfo.image);
-    final Rx<String?> localSelectedProblemType =
-        Rx<String?>(packageInfo.problemType);
-    final RxBool localShowOtherProblemField =
-        (packageInfo.problemType == 'Other').obs;
-    final TextEditingController localOtherProblemController =
-        TextEditingController(text: packageInfo.otherProblem);
+      BuildContext context, PackageInfo packageInfo, int? index, [bool exists = true]) {
     final File? originalImage = packageInfo.image;
+
+    // Reset the PackagePhotoController state
+    packagePhotoController.clearPhoto();
+    if (originalImage != null) {
+      packagePhotoController.capturedImage.value = originalImage;
+      packagePhotoController.isImageCaptured.value = true;
+    }
+    packagePhotoController.selectedProblemType.value = packageInfo.problemType;
+    packagePhotoController.showOtherProblemField.value =
+        packageInfo.problemType == 'Other';
+    packagePhotoController.otherProblemController.text =
+        packageInfo.otherProblem ?? '';
+
+    final String controllerTag =
+        'barcode_bottom_sheet_${packageInfo.trackingNumber}';
+
+    Get.put(
+      BarcodeDetectedBottomSheetController(
+        photoInfoFetcher: fetchPhotoInfoForPackage,
+        trackingNumber: packageInfo.trackingNumber,
+         packageExists: exists,
+      ),
+      tag: controllerTag,
+      permanent: false,
+    );
 
     showModalBottomSheet(
       isDismissible: false,
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (BuildContext context) => BarcodeDetectedBottomSheet(
-        onCancel: () {
-          Navigator.of(context).pop();
-        },
-        packageInfo: packageInfo,
-        isEditing: index != null,
-        onSaveAndExit: () {
-          _updatePackageInfo(
-            packageInfo,
-            localIsImageCaptured.value,
-            localCapturedImage.value,
-            localSelectedProblemType.value,
-            localOtherProblemController.text,
-          );
-          addDetectedPackage(packageInfo);
-          Navigator.pop(context);
-        },
-        onSaveAndNext: () {
-          _updatePackageInfo(
-            packageInfo,
-            localIsImageCaptured.value,
-            localCapturedImage.value,
-            localSelectedProblemType.value,
-            localOtherProblemController.text,
-          );
-          addDetectedPackage(packageInfo);
-          Navigator.pop(context);
-          showScannerDialog(context);
-        },
-        onUpdate: index != null
-            ? () {
-                _updatePackageInfo(
-                  packageInfo,
-                  localIsImageCaptured.value,
-                  localCapturedImage.value,
-                  localSelectedProblemType.value,
-                  localOtherProblemController.text,
-                );
-                updateDetectedPackage(index, packageInfo);
-                Navigator.pop(context);
-              }
-            : null,
-        onRemove: index != null
-            ? () {
-                removeDetectedPackage(index);
-                Navigator.pop(context);
-              }
-            : null,
-        onReScan: () {
-          Navigator.pop(context);
-          showScannerDialog(context);
-        },
-        onTogglePhoto: (bool? value) {
-          localIsImageCaptured.value = value ?? false;
-          if (!localIsImageCaptured.value) {
-            localCapturedImage.value = null;
-            localSelectedProblemType.value = null;
-            localShowOtherProblemField.value = false;
-            localOtherProblemController.clear();
-          } else if (originalImage != null) {
-            localCapturedImage.value = originalImage;
-          }
-        },
-        onTakePhoto: () async {
-          await takePhoto();
-          localCapturedImage.value = capturedImage.value;
-          localIsImageCaptured.value = localCapturedImage.value != null;
-        },
-        onViewPhoto: () => _showImageViewDialog(
-          context,
-          localCapturedImage.value!,
-          () async {
-            Get.back();
-            await takePhoto();
-            localCapturedImage.value = capturedImage.value;
-            localIsImageCaptured.value = localCapturedImage.value != null;
+      builder: (BuildContext context) {
+        return BarcodeDetectedBottomSheet(
+          controllerTag: controllerTag,
+          onCancel: () async {
+            Navigator.of(context).pop();
           },
-        ),
-        onProblemTypeChanged: (String? value) {
-          localSelectedProblemType.value = value;
-          localShowOtherProblemField.value = value == 'Other';
-          if (value != 'Other') {
-            localOtherProblemController.clear();
-          }
-        },
-        onOtherProblemChanged: (String value) {
-          localOtherProblemController.text = value;
-        },
-        isImageCaptured: localIsImageCaptured,
-        capturedImage: localCapturedImage,
-        selectedProblemType: localSelectedProblemType,
-        showOtherProblemField: localShowOtherProblemField,
-        otherProblemController: localOtherProblemController,
-      ),
+          packageInfo: packageInfo,
+          isEditing: index != null,
+          onSaveAndExit: () {
+            _updatePackageInfo(packageInfo);
+            addDetectedPackage(packageInfo);
+            Navigator.pop(context);
+          },
+          onSaveAndNext: () {
+            _updatePackageInfo(packageInfo);
+            addDetectedPackage(packageInfo);
+            Navigator.pop(context);
+            showScannerDialog(context);
+          },
+          onUpdate: index != null
+              ? () {
+                  _updatePackageInfo(packageInfo);
+                  updateDetectedPackage(index, packageInfo);
+                  Navigator.pop(context);
+                }
+              : null,
+          onRemove: index != null
+              ? () {
+                  removeDetectedPackage(index);
+                  Navigator.pop(context);
+                }
+              : null,
+          onReScan: () {
+            Navigator.pop(context);
+            showScannerDialog(context);
+          },
+          onTogglePhoto: (bool? value) {
+            packagePhotoController.isImageCaptured.value = value ?? false;
+            if (!packagePhotoController.isImageCaptured.value) {
+              packagePhotoController.clearPhoto();
+            } else if (originalImage != null) {
+              packagePhotoController.capturedImage.value = originalImage;
+            }
+          },
+          onTakePhoto: () => packagePhotoController.takePhoto(),
+          onViewPhoto: () => _showImageViewDialog(
+            context,
+            packagePhotoController.capturedImage.value!,
+            packagePhotoController.takePhoto,
+          ),
+          onProblemTypeChanged: (String? value) {
+            packagePhotoController.selectedProblemType.value = value;
+            packagePhotoController.showOtherProblemField.value =
+                value == 'Other';
+            if (value != 'Other') {
+              packagePhotoController.otherProblemController.clear();
+            }
+          },
+          onOtherProblemChanged: (String value) {
+            packagePhotoController.otherProblemController.text = value;
+          },
+          packagePhotoController: packagePhotoController,
+        );
+      },
     ).then((_) {
       if (index == null) {
-        clearPhoto();
+        packagePhotoController.clearPhoto();
       }
     });
   }
 
-  void _updatePackageInfo(PackageInfo packageInfo, bool isImageCaptured,
-      File? capturedImage, String? selectedProblemType, String otherProblem) {
-    packageInfo.image = isImageCaptured ? capturedImage : null;
-    packageInfo.problemType = selectedProblemType;
+  void _updatePackageInfo(PackageInfo packageInfo) {
+    packageInfo.image = packagePhotoController.isImageCaptured.value
+        ? packagePhotoController.capturedImage.value
+        : null;
+    packageInfo.problemType = packagePhotoController.selectedProblemType.value;
     packageInfo.otherProblem =
-        selectedProblemType == 'Other' ? otherProblem : null;
+        packagePhotoController.selectedProblemType.value == 'Other'
+            ? packagePhotoController.otherProblemController.text
+            : null;
   }
 
   void _showImageViewDialog(
@@ -446,25 +325,29 @@ class ConsolidationProcessController extends GetxController {
     Get.dialog(
       ImageViewDialog(
         imageFile: imageFile,
-        onRetake: onRetake,
+        onRetake: () {
+          Get.back();
+          takePhoto();
+        },
       ),
       barrierDismissible: false,
     );
   }
 
-  void showTrackingNumberEntry(BuildContext context) {
+ void showTrackingNumberEntry(BuildContext context) {
     showModalBottomSheet(
       isDismissible: false,
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (BuildContext context) => TrackingNumberEntryModal(
-        onAdd: (val) {
+        onAdd: (val, {bool? isSuggestionSelected}) {
           Navigator.of(context).pop();
           if (!checkBarcodeExists(val)) {
             trackingNumberController.clear();
+            bool exists = isSuggestionSelected ?? false;
             showBarcodeDetectedBottomSheet(
-                context, PackageInfo(trackingNumber: val), null);
+                context, PackageInfo(trackingNumber: val), null, exists);
           }
         },
         textEditingController: trackingNumberController,

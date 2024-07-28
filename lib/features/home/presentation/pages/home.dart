@@ -102,7 +102,7 @@ class HomePage extends GetView<HomeController> {
         return controller.location.value == 'Receiving'
             ? TrackingNumberEntryModal(
                 isLoading: false.obs,
-                onAdd: (_) async {
+                onAdd: (val, {bool? isSuggestionSelected}) async {
                   Get.back();
                   manualEntry(controller.trackingNumberController.text);
                   controller.trackingNumberController.clear();
@@ -115,7 +115,7 @@ class HomePage extends GetView<HomeController> {
               )
             : TrackingNumberEntryModal(
                 isLoading: controller.isLoadingSearch,
-                onAdd: (_) async {
+                onAdd: (val, {bool? isSuggestionSelected}) async {
                   Get.back();
                   manualEntry(controller.trackingNumberController.text);
                   controller.trackingNumberController.clear();

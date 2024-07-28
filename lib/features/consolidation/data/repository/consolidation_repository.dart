@@ -13,7 +13,8 @@ abstract class ConsolidationRepository {
     required double weight,
     required double length,
   });
- 
+
+  Future<bool> isPackageExisting(String trackingNumber);
 }
 
 class ConsolidationRepositoryImpl implements ConsolidationRepository {
@@ -21,49 +22,23 @@ class ConsolidationRepositoryImpl implements ConsolidationRepository {
 
   ConsolidationRepositoryImpl(this._firestore);
 
-  // @override
-  // Future<List<String>> searchTrackingNumbers(String query) async {
-  //   try {
-  //     if (!await InternetChecker.checkInternet()) {
-  //       return [];
-  //     }
-
-  //     Set<String> uniqueTrackingNumbers = {};
-
-  //     QuerySnapshot rawResult = await _firestore
-  //         .collection('Package')
-  //         .where('rawTrackingNumber', isGreaterThanOrEqualTo: query)
-  //         .where('rawTrackingNumber', isLessThan: '${query}z')
-  //         .limit(10)
-  //         .get();
-
-  //     for (var doc in rawResult.docs) {
-  //       var data = doc.data() as Map<String, dynamic>;
-  //       if (data['rawTrackingNumber'] != null) {
-  //         uniqueTrackingNumbers.add(data['rawTrackingNumber']);
-  //       }
-  //     }
-
-  //     QuerySnapshot trackingResult = await _firestore
-  //         .collection('Package')
-  //         .where('trackingNumber', isGreaterThanOrEqualTo: query)
-  //         .where('trackingNumber', isLessThan: '${query}z')
-  //         .limit(10)
-  //         .get();
-
-  //     for (var doc in trackingResult.docs) {
-  //       var data = doc.data() as Map<String, dynamic>;
-  //       if (data['trackingNumber'] != null) {
-  //         uniqueTrackingNumbers.add(data['trackingNumber']);
-  //       }
-  //     }
-
-
-  //     return uniqueTrackingNumbers.toList();
-  //   } catch (e) {
-  //     return [];
-  //   }
-  // }
+  @override
+  Future<bool> isPackageExisting(String trackingNumber) async {
+    try {
+      QuerySnapshot packageSnapshot = await _firestore
+          .collection('Package')
+          .where(Filter.or(
+            Filter('rawTrackingNumber', isEqualTo: trackingNumber),
+            Filter('trackingNumber', isEqualTo: trackingNumber),
+          ))
+          .where('status', whereIn: ['Receiving', 'Consolidated'])
+          .limit(1)
+          .get();
+      return packageSnapshot.docs.isNotEmpty;
+    } catch (e) {
+      return false;
+    }
+  }
 
   @override
   Future<StatusResult> consolidatePackages({
@@ -183,7 +158,7 @@ class ConsolidationRepositoryImpl implements ConsolidationRepository {
     LogModel log = LogModel(
       logID: _firestore.collection('Log').doc().id,
       packageID: packageId,
-      userID: '20', // Consider making this dynamic
+      userID: '20',
       status: status,
       timestamp: FieldValue.serverTimestamp(),
     );
