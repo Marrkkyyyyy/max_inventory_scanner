@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:max_inventory_scanner/core/theme/color.dart';
 import 'package:max_inventory_scanner/features/consolidation/data/model/package_info_model.dart';
-import 'package:max_inventory_scanner/features/consolidation/presentation/controller/package_photo_controller.dart';
+import 'package:max_inventory_scanner/features/consolidation/presentation/controller/sub_controller/package_photo_controller.dart';
 import 'package:max_inventory_scanner/features/package_details/presentation/widgets/image_view.dart';
 import 'package:max_inventory_scanner/features/package_photo_info.dart/presentation/controller/bottom_sheet_controller.dart';
 import 'package:max_inventory_scanner/features/consolidation/presentation/widgets/barcode_detected_bottom_sheet.dart/action_button.dart';

@@ -15,12 +15,12 @@ class DialogService {
     );
   }
 
-  Future<bool?> showPhotoRequiredDialog() async {
+  Future<bool?> showPhotoRequiredDialog(String message) async {
     return _showCustomDialog(
       icon: Icons.camera_alt,
       title: 'Photo is Required',
       content:
-          'Package not found. Please take a photo of the package label to proceed.',
+          message,
       confirmText: 'Take Photo',
       cancelText: 'Close',
       barrierDismissible: false,

@@ -6,11 +6,16 @@ import 'dart:io';
 import 'package:max_inventory_scanner/core/services/image_service.dart';
 
 class PackagePhotoController extends GetxController {
+  // Dependencies
   final ImageService imageService;
+
+  // Observables
   final RxBool isImageCaptured = false.obs;
   final Rx<File?> capturedImage = Rx<File?>(null);
   final Rx<String?> selectedProblemType = Rx<String?>(null);
   final RxBool showOtherProblemField = false.obs;
+
+  // Controllers
   final TextEditingController otherProblemController = TextEditingController();
 
   PackagePhotoController(this.imageService);
@@ -24,13 +29,18 @@ class PackagePhotoController extends GetxController {
   void clearPhoto() {
     capturedImage.value = null;
     isImageCaptured.value = false;
-    showOtherProblemField.value = false;
-    otherProblemController.clear();
+    clearProblemData();
     update();
   }
 
+  void clearProblemData() {
+    selectedProblemType.value = null;
+    showOtherProblemField.value = false;
+    otherProblemController.clear();
+  }
+
   Future<void> takePhoto() async {
-    File? image = await imageService.takePhoto();
+    final File? image = await imageService.takePhoto();
     if (image != null) {
       capturedImage.value = image;
       isImageCaptured.value = true;
@@ -40,4 +50,18 @@ class PackagePhotoController extends GetxController {
     update();
   }
 
+  void setProblemType(String? type) {
+    selectedProblemType.value = type;
+    showOtherProblemField.value = type == 'Other';
+    if (type != 'Other') {
+      otherProblemController.clear();
+    }
+    update();
+  }
+
+  bool get hasPhoto => isImageCaptured.value && capturedImage.value != null;
+
+  bool get hasProblemData =>
+      selectedProblemType.value != null ||
+      otherProblemController.text.isNotEmpty;
 }

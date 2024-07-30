@@ -54,6 +54,7 @@ class PackageDetailsController extends GetxController {
   final RxString nameNotInListWarning = ''.obs;
   final RxBool isWarningVisible = false.obs;
   final RxBool shouldUploadPhoto = false.obs;
+  final RxBool hasSkippedPhoto = false.obs;
 
   // Non-observable properties
   late String barcodeResult;
@@ -202,36 +203,42 @@ class PackageDetailsController extends GetxController {
     if (!validateAllFields()) {
       if (hasProblem.value &&
           !isImageCaptured.value &&
-          selectedProblemType.value != null &&
-          selectedProblemType.value != 'No Problem Type Selected') {
-        SnackbarService.showCustomSnackbar(
-          title: "Validation Error",
-          message: "Please take a photo of the package.",
-          backgroundColor: Colors.red,
-        );
-        return;
-      }
-    }
-
-    if (hasProblem.value &&
-        !isImageCaptured.value &&
-        (selectedProblemType.value == null ||
-            selectedProblemType.value == 'No Problem Type Selected')) {
-      bool? shouldTakePhoto =
-          await dialogService.showPhotoConfirmationDialog();
-      if (shouldTakePhoto == null) {
-        return;
-      }
-      if (shouldTakePhoto) {
-        await takePhoto();
-        if (!isImageCaptured.value) {
-          return;
+          !hasSkippedPhoto.value) {
+        if (selectedProblemType.value == 'Unknown Carrier' ||
+            selectedProblemType.value == 'No Problem Type Selected' ||
+            selectedProblemType.value == null) {
+          bool? shouldTakePhoto =
+              await dialogService.showPhotoConfirmationDialog();
+          if (shouldTakePhoto == null) {
+            return;
+          }
+          if (shouldTakePhoto) {
+            await takePhoto();
+            return;
+          } else {
+            hasSkippedPhoto.value = true;
+            return;
+          }
+        } else {
+          bool? shouldTakePhoto = await dialogService.showPhotoRequiredDialog(
+              'Please take a photo of the package label to proceed');
+          if (shouldTakePhoto == null) {
+            return;
+          }
+          if (shouldTakePhoto) {
+            await takePhoto();
+            return;
+          } else {
+            return;
+          }
         }
-      } else {
-        return;
       }
     }
 
+    await _savePackageProcess(exitAfterSave);
+  }
+
+  Future<void> _savePackageProcess(bool exitAfterSave) async {
     isSaving.value = true;
 
     try {
@@ -440,6 +447,7 @@ class PackageDetailsController extends GetxController {
     packageStatus.value = '';
     showUnknownCarrier.value = true;
     showCameraButton.value = true;
+    hasSkippedPhoto.value = false;
     update();
   }
 

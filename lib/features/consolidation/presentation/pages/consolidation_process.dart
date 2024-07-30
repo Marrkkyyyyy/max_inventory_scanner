@@ -50,7 +50,7 @@ class ConsolidationProcess extends GetView<ConsolidationProcessController> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _buildWarningMessage(),
-          controller.buildPhotoButton(context),
+          buildPhotoButton(context),
           _buildClientNameField(),
           const MainPackageInfo(),
           const SizedBox(height: 12),
@@ -67,6 +67,47 @@ class ConsolidationProcess extends GetView<ConsolidationProcessController> {
         ));
   }
 
+  Widget buildPhotoButton(BuildContext context) {
+    return Obx(() {
+      if (!controller.isNewBox.value && !controller.packageExists.value) {
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          child: ElevatedButton.icon(
+              onPressed: controller.isImageCaptured.value
+                  ? () => controller.showImageViewDialog(context,
+                      controller.capturedImage.value!, controller.takePhoto)
+                  : controller.takePhoto,
+              icon: Icon(
+                controller.isImageCaptured.value
+                    ? Icons.photo
+                    : Icons.camera_alt,
+                color: AppColor.white,
+              ),
+              label: Text(
+                controller.isImageCaptured.value
+                    ? "View Photo"
+                    : "Take a Photo",
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600),
+              ),
+              style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  backgroundColor: controller.isImageCaptured.value
+                      ? AppColor.teal
+                      : AppColor.blue,
+                  side: controller.isImageCaptured.value
+                      ? BorderSide(color: AppColor.teal)
+                      : null,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8)))),
+        );
+      } else {
+        return const SizedBox();
+      }
+    });
+  }
 
   Widget _buildClientNameField() {
     return Obx(() => controller.isNewBox.value
@@ -78,11 +119,13 @@ class ConsolidationProcess extends GetView<ConsolidationProcessController> {
     return Expanded(
       child: DetectedBarcodesList(
         controller: controller,
-        onTap: (index) => controller.showBarcodeDetectedBottomSheet(
-            context, controller.detectedPackages[index], index),
-        onRemove: controller.removeDetectedPackage,
-        onManualEntry: () => controller.showTrackingNumberEntry(context),
-        onScan: () => controller.showScannerDialog(context),
+        onTap: (index) => controller.barcodeController
+            .showBarcodeDetectedBottomSheet(context,
+                controller.barcodeController.detectedPackages[index], index),
+        onRemove: controller.barcodeController.removeDetectedPackage,
+        onManualEntry: () => controller.trackingNumberController
+            .showTrackingNumberEntry(context),
+        onScan: () => controller.barcodeController.showScannerDialog(context),
       ),
     );
   }

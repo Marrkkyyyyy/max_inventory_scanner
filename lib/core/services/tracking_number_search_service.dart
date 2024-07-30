@@ -19,58 +19,61 @@ class TrackingNumberSearchService {
 
       String lowercaseQuery = query.toLowerCase();
 
-      QuerySnapshot querySnapshot = await baseQuery
-          .where('rawTrackingNumber', isGreaterThanOrEqualTo: lowercaseQuery)
-          .where('rawTrackingNumber', isLessThan: '${lowercaseQuery}z')
+      QuerySnapshot rawQuerySnapshot = await baseQuery
+          .orderBy('rawTrackingNumber')
+          .startAt([lowercaseQuery])
+          .endAt(['$lowercaseQuery\uf8ff'])
           .limit(20)
           .get();
 
-      for (var doc in querySnapshot.docs) {
-        var data = doc.data() as Map<String, dynamic>;
-        if (currentLocation == 'Consolidation') {
-          String status = (data['status'] as String?)?.toLowerCase() ?? '';
-          if (status != 'receiving' && status != 'consolidated') {
-            continue;
-          }
-        }
+      _processQuerySnapshot(rawQuerySnapshot, uniqueTrackingNumbers,
+          lowercaseQuery, currentLocation);
 
-        if (data['rawTrackingNumber'] != null) {
-          uniqueTrackingNumbers
-              .add(data['rawTrackingNumber'].toString().toLowerCase());
-        }
-        if (data['trackingNumber'] != null) {
-          uniqueTrackingNumbers
-              .add(data['trackingNumber'].toString().toLowerCase());
-        }
-      }
-
-      if (uniqueTrackingNumbers.length < 10) {
-        QuerySnapshot trackingSnapshot = await baseQuery
-            .where('trackingNumber', isGreaterThanOrEqualTo: lowercaseQuery)
-            .where('trackingNumber', isLessThan: '${lowercaseQuery}z')
+      if (uniqueTrackingNumbers.length < 20) {
+        QuerySnapshot trackingQuerySnapshot = await baseQuery
+            .orderBy('trackingNumber')
+            .startAt([lowercaseQuery])
+            .endAt(['$lowercaseQuery\uf8ff'])
             .limit(20 - uniqueTrackingNumbers.length)
             .get();
 
-        for (var doc in trackingSnapshot.docs) {
-          var data = doc.data() as Map<String, dynamic>;
-
-          if (currentLocation == 'Consolidation') {
-            String status = (data['status'] as String?)?.toLowerCase() ?? '';
-            if (status != 'receiving' && status != 'consolidated') {
-              continue;
-            }
-          }
-
-          if (data['trackingNumber'] != null) {
-            uniqueTrackingNumbers
-                .add(data['trackingNumber'].toString().toLowerCase());
-          }
-        }
+        _processQuerySnapshot(trackingQuerySnapshot, uniqueTrackingNumbers,
+            lowercaseQuery, currentLocation);
       }
 
       return uniqueTrackingNumbers.toList();
     } catch (e) {
       return [];
+    }
+  }
+
+  void _processQuerySnapshot(QuerySnapshot snapshot,
+      Set<String> uniqueTrackingNumbers, String query, String currentLocation) {
+    for (var doc in snapshot.docs) {
+      var data = doc.data() as Map<String, dynamic>;
+      if (currentLocation == 'Consolidation') {
+        String status = (data['status'] as String?)?.toLowerCase() ?? '';
+        if (status != 'receiving' && status != 'consolidated') {
+          continue;
+        }
+      }
+
+      String rawTrackingNumber =
+          (data['rawTrackingNumber'] as String?)?.toLowerCase() ?? '';
+      String trackingNumber =
+          (data['trackingNumber'] as String?)?.toLowerCase() ?? '';
+
+      if (rawTrackingNumber.contains(query)) {
+        uniqueTrackingNumbers.add(rawTrackingNumber);
+      }
+      if (trackingNumber.contains(query) &&
+          trackingNumber != rawTrackingNumber) {
+        uniqueTrackingNumbers.add(trackingNumber);
+      }
+
+      if (uniqueTrackingNumbers.length >= 20) {
+        break;
+      }
     }
   }
 }

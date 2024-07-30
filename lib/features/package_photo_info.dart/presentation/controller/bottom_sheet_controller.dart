@@ -13,11 +13,13 @@ class BarcodeDetectedBottomSheetController extends GetxController {
   final RxBool isPackageExist = true.obs;
   final String trackingNumber;
   final bool packageExists;
+  final bool shouldCheckExistence;
 
   BarcodeDetectedBottomSheetController({
     required this.photoInfoFetcher,
     required this.trackingNumber,
     required this.packageExists,
+    required this.shouldCheckExistence,
   });
 
   Future<bool> checkPackageExistence(String barcode) async {
@@ -34,6 +36,12 @@ class BarcodeDetectedBottomSheetController extends GetxController {
   }
 
   Future<void> initializeData() async {
+    if (!shouldCheckExistence) {
+      isLoading.value = false;
+      isPackageExist.value = false;
+      return;
+    }
+
     try {
       await EasyLoading.show(status: 'Loading...', dismissOnTap: false);
 
@@ -42,7 +50,6 @@ class BarcodeDetectedBottomSheetController extends GetxController {
       if (!packageExists) {
         futures.add(checkPackageExistence(trackingNumber));
       }
-
       futures.add(Future.delayed(const Duration(seconds: 2)));
 
       final List<dynamic> results = await Future.wait(futures);
@@ -51,7 +58,7 @@ class BarcodeDetectedBottomSheetController extends GetxController {
         bool packageExistsCheck = results[1] as bool;
         isPackageExist.value = packageExistsCheck;
       } else {
-        isPackageExist.value = true;
+        isPackageExist.value = packageExists;
       }
     } finally {
       await EasyLoading.dismiss();

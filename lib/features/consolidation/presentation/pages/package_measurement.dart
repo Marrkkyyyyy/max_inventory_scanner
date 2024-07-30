@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:max_inventory_scanner/core/theme/color.dart';
-import 'package:max_inventory_scanner/features/consolidation/presentation/controller/measurement_controller.dart';
+import 'package:max_inventory_scanner/features/consolidation/presentation/controller/sub_controller/measurement_controller.dart';
 
 class MeasurementBottomSheet extends GetView<MeasurementController> {
   final VoidCallback onSaveAndExit;

@@ -9,8 +9,9 @@ class AppStrings {
 
   static const List<String> problemTypes = [
     'Damaged',
-    'No Name',
     'No Address',
+    'No Name',
+    'Unknown Carrier',
     'Other'
   ];
 }

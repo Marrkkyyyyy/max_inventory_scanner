@@ -31,7 +31,7 @@ class PackageActionButtonsWidget extends GetView<PackageDetailsController> {
                 child: _buildButton(
                   onPressed: () => controller.processAndSavePackage(),
                   text: 'Save & Exit',
-                  icon: Icons.check_circle_outline,
+                  icon: Icons.save_alt_rounded,
                   isPrimary: false,
                 ),
               ),
@@ -40,8 +40,8 @@ class PackageActionButtonsWidget extends GetView<PackageDetailsController> {
                 child: _buildButton(
                   onPressed: () =>
                       controller.processAndSavePackage(exitAfterSave: false),
-                  text: 'Save & Next',
-                  icon: Icons.save_alt_rounded,
+                  text: 'Scan Next',
+                  icon: Icons.qr_code_scanner_rounded,
                   isPrimary: true,
                 ),
               ),

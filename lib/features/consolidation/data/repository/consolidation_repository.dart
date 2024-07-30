@@ -36,6 +36,8 @@ class ConsolidationRepositoryImpl implements ConsolidationRepository {
           .get();
       return packageSnapshot.docs.isNotEmpty;
     } catch (e) {
+      // Log the error
+      print('Error checking package existence: $e');
       return false;
     }
   }
@@ -80,6 +82,8 @@ class ConsolidationRepositoryImpl implements ConsolidationRepository {
       await batch.commit();
       return StatusResult.success;
     } catch (e) {
+      // Log the error
+      print('Error consolidating packages: $e');
       return StatusResult.failure;
     }
   }
@@ -91,22 +95,28 @@ class ConsolidationRepositoryImpl implements ConsolidationRepository {
     double length,
     WriteBatch batch,
   ) async {
-    QuerySnapshot existingPackage = await _firestore
-        .collection('Package')
-        .where(Filter.or(
-          Filter('trackingNumber', isEqualTo: trackingNumber),
-          Filter('rawTrackingNumber', isEqualTo: trackingNumber),
-        ))
-        .limit(1)
-        .get();
+    try {
+      QuerySnapshot existingPackage = await _firestore
+          .collection('Package')
+          .where(Filter.or(
+            Filter('trackingNumber', isEqualTo: trackingNumber),
+            Filter('rawTrackingNumber', isEqualTo: trackingNumber),
+          ))
+          .limit(1)
+          .get();
 
-    if (existingPackage.docs.isNotEmpty) {
-      PackageModel package = PackageModel.fromJson(
-        existingPackage.docs.first.data() as Map<String, dynamic>,
-      );
-      return _updateExistingPackage(package, height, weight, length, batch);
-    } else {
-      return _createNewPackage(trackingNumber, height, weight, length, batch);
+      if (existingPackage.docs.isNotEmpty) {
+        PackageModel package = PackageModel.fromJson(
+          existingPackage.docs.first.data() as Map<String, dynamic>,
+        );
+        return _updateExistingPackage(package, height, weight, length, batch);
+      } else {
+        return _createNewPackage(trackingNumber, height, weight, length, batch);
+      }
+    } catch (e) {
+      // Log the error
+      print('Error finding or creating consolidated package: $e');
+      rethrow;
     }
   }
 
@@ -170,29 +180,36 @@ class ConsolidationRepositoryImpl implements ConsolidationRepository {
     String consolidatedPackageId,
     WriteBatch batch,
   ) async {
-    QuerySnapshot packageSnapshot = await _firestore
-        .collection('Package')
-        .where(Filter.or(
-          Filter('rawTrackingNumber', isEqualTo: trackingNumber),
-          Filter('trackingNumber', isEqualTo: trackingNumber),
-        ))
-        .limit(1)
-        .get();
+    try {
+      QuerySnapshot packageSnapshot = await _firestore
+          .collection('Package')
+          .where(Filter.or(
+            Filter('rawTrackingNumber', isEqualTo: trackingNumber),
+            Filter('trackingNumber', isEqualTo: trackingNumber),
+          ))
+          .limit(1)
+          .get();
 
-    if (packageSnapshot.docs.isEmpty) return StatusResult.notFound;
+      if (packageSnapshot.docs.isEmpty) return StatusResult.notFound;
 
-    PackageModel package = PackageModel.fromJson(
-      packageSnapshot.docs.first.data() as Map<String, dynamic>,
-    );
+      PackageModel package = PackageModel.fromJson(
+        packageSnapshot.docs.first.data() as Map<String, dynamic>,
+      );
 
-    PackageModel updatedPackage = package.copyWith(
-      status: 'Consolidated',
-      consolidatedInto: consolidatedPackageId,
-    );
-    batch.update(packageSnapshot.docs.first.reference, updatedPackage.toJson());
+      PackageModel updatedPackage = package.copyWith(
+        status: 'Consolidated',
+        consolidatedInto: consolidatedPackageId,
+      );
+      batch.update(
+          packageSnapshot.docs.first.reference, updatedPackage.toJson());
 
-    _createLogEntry(batch, package.packageID!, 'Consolidated');
+      _createLogEntry(batch, package.packageID!, 'Consolidated');
 
-    return StatusResult.success;
+      return StatusResult.success;
+    } catch (e) {
+      // Log the error
+      print('Error processing package: $e');
+      return StatusResult.failure;
+    }
   }
 }

@@ -3,11 +3,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:max_inventory_scanner/core/services/client_service.dart';
 import 'package:max_inventory_scanner/core/services/image_service.dart';
 import 'package:max_inventory_scanner/features/consolidation/data/repository/consolidation_repository.dart';
-import 'package:max_inventory_scanner/features/consolidation/presentation/controller/client_controller.dart';
+import 'package:max_inventory_scanner/features/consolidation/presentation/controller/sub_controller/client_controller.dart';
 import 'package:max_inventory_scanner/features/consolidation/presentation/controller/consolidation_controller.dart';
 import 'package:max_inventory_scanner/features/consolidation/presentation/controller/consolidation_process_controller.dart';
-import 'package:max_inventory_scanner/features/consolidation/presentation/controller/measurement_controller.dart';
-import 'package:max_inventory_scanner/features/consolidation/presentation/controller/package_photo_controller.dart';
+import 'package:max_inventory_scanner/features/consolidation/presentation/controller/sub_controller/package_photo_controller.dart';
 import 'package:max_inventory_scanner/features/consolidation/presentation/pages/consolidation.dart';
 import 'package:max_inventory_scanner/features/consolidation/presentation/pages/consolidation_process.dart';
 import 'package:max_inventory_scanner/features/home/controller/home_controller.dart';
@@ -64,6 +63,7 @@ class AppPages {
         // Services
         Get.put<ClientService>(ClientService());
         Get.put<ImageService>(ImageService());
+        
         Get.put<TrackingNumberSearchService>(
             TrackingNumberSearchService(Get.find<FirebaseFirestore>()));
         Get.put<PackagePhotoRepository>(

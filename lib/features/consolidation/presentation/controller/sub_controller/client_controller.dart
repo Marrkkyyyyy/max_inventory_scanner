@@ -5,10 +5,13 @@ import 'package:flutter/material.dart';
 import 'package:max_inventory_scanner/core/services/client_service.dart';
 
 class ClientController extends GetxController {
+  // Dependencies
   final ClientService clientService;
+
+  // Controllers
   final TextEditingController clientNameController = TextEditingController();
 
-  // Observable variables
+  // Observables
   final RxBool isWarningVisible = false.obs;
   final RxBool isTextFieldFocused = false.obs;
   final RxBool showSuggestions = true.obs;
@@ -36,36 +39,51 @@ class ClientController extends GetxController {
 
   void onClientNameChanged() {
     final query = clientNameController.text.trim();
-    clientSuggestions.value = query.isEmpty ? [] : clientService.getSuggestions(query);
-    showSuggestions.value = isTextFieldFocused.value && clientSuggestions.isNotEmpty;
+    _updateSuggestions(query);
+    _checkNameInClientList(query);
+    validateClientName();
+  }
 
+  void _updateSuggestions(String query) {
+    clientSuggestions.value =
+        query.isEmpty ? [] : clientService.getSuggestions(query);
+    showSuggestions.value =
+        isTextFieldFocused.value && clientSuggestions.isNotEmpty;
+  }
+
+  void _checkNameInClientList(String query) {
     isNameInClientList.value = clientService.isExactMatch(query);
     if (!isNameInClientList.value && query.isNotEmpty) {
-      nameNotInListWarning.value = 'Name not in client list. Verify or continue if it\'s a new client.';
+      nameNotInListWarning.value =
+          'Name not in client list. Verify or continue if it\'s a new client.';
       isWarningVisible.value = false;
     } else {
       nameNotInListWarning.value = '';
       isWarningVisible.value = false;
     }
-
-    validateClientName();
   }
 
   bool validateClientName() {
     final name = clientNameController.text.trim();
     isClientNameValid.value = name.isNotEmpty;
-    clientNameError.value = isClientNameValid.value ? '' : 'Client name is required';
+    clientNameError.value =
+        isClientNameValid.value ? '' : 'Client name is required';
 
+    _updateWarningVisibility(name);
+
+    update();
+    return isClientNameValid.value;
+  }
+
+  void _updateWarningVisibility(String name) {
     if (name.isNotEmpty && !clientService.isExactMatch(name)) {
-      nameNotInListWarning.value = 'Name not in client list. Verify or continue if it\'s a new client.';
+      nameNotInListWarning.value =
+          'Name not in client list. Verify or continue if it\'s a new client.';
       isWarningVisible.value = !isTextFieldFocused.value;
     } else {
       nameNotInListWarning.value = '';
       isWarningVisible.value = false;
     }
-
-    update();
-    return isClientNameValid.value;
   }
 
   void onClientNameFocusChanged(bool hasFocus) {

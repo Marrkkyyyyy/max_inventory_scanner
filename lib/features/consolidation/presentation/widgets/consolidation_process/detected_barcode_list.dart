@@ -24,16 +24,16 @@ class DetectedBarcodesList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Obx(() {
-      final itemCount = controller.detectedPackages.isEmpty
+      final itemCount = controller.barcodeController.detectedPackages.isEmpty
           ? 1
-          : controller.detectedPackages.length + 1;
+          : controller.barcodeController.detectedPackages.length + 1;
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
             child: Text(
-              "Packages (${controller.detectedPackages.length})",
+              "Packages (${controller.barcodeController.detectedPackages.length})",
               style: const TextStyle(
                 color: AppColor.darkBlue,
                 fontWeight: FontWeight.bold,
@@ -46,14 +46,16 @@ class DetectedBarcodesList extends StatelessWidget {
               itemCount: itemCount,
               padding: const EdgeInsets.symmetric(horizontal: 16),
               itemBuilder: (context, index) {
-                if (index == controller.detectedPackages.length) {
+                if (index ==
+                    controller.barcodeController.detectedPackages.length) {
                   return AddItemCard(
                     onManualEntry: onManualEntry,
                     onScan: onScan,
                   );
                 } else {
                   return PackageItem(
-                    packageInfo: controller.detectedPackages[index],
+                    packageInfo:
+                        controller.barcodeController.detectedPackages[index],
                     onTap: () => onTap(index),
                     onRemove: () => onRemove(index),
                   );

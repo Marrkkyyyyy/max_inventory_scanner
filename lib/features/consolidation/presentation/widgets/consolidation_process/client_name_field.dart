@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:max_inventory_scanner/core/theme/color.dart';
-import 'package:max_inventory_scanner/features/consolidation/presentation/controller/client_controller.dart';
+import 'package:max_inventory_scanner/features/consolidation/presentation/controller/sub_controller/client_controller.dart';
 
 class ConsolidationClientNameFieldWidget extends GetView<ClientController> {
   const ConsolidationClientNameFieldWidget({super.key});
